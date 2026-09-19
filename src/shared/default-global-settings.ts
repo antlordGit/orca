@@ -214,6 +214,8 @@ export function buildDefaultSettings(args: {
     agentCmdOverrides: {},
     agentDefaultArgs: { ...DEFAULT_TUI_AGENT_ARGS },
     agentDefaultEnv: { ...DEFAULT_TUI_AGENT_ENV },
+    // Why: hydrate a stable empty map so renderer reads never hit undefined.
+    agentPromptShortcuts: {},
     agentYoloDefaultsMigrated: true,
     agentStatusHooksEnabled: true,
     tabAutoGenerateTitle: false,

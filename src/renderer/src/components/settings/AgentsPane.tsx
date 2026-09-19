@@ -44,6 +44,11 @@ import {
   createAgentAvailabilityUpdateQueue
 } from './agent-availability-settings'
 import { AgentAvailabilityControl, type AgentCatalogRowProps } from './AgentCatalogRow'
+import type { AgentPromptShortcut } from '../../../../shared/agent-prompt-shortcuts'
+import {
+  applyAgentPromptShortcutsToAgent,
+  readAgentPromptShortcuts
+} from '../../../../shared/agent-prompt-shortcuts'
 import { AgentDefaultSetting } from './AgentDefaultSetting'
 import { AgentDetectionCatalog } from './AgentDetectionCatalog'
 
@@ -177,6 +182,7 @@ export function AgentsPane({
   const cmdOverrides = settings.agentCmdOverrides ?? {}
   const agentDefaultArgs = settings.agentDefaultArgs ?? {}
   const agentDefaultEnv = settings.agentDefaultEnv ?? {}
+  const agentPromptShortcuts = settings.agentPromptShortcuts ?? {}
   const disabledAgents = normalizeDisabledTuiAgents(settings.disabledTuiAgents)
   const detectedAgents =
     detectedIds === null ? [] : catalog.filter((agent) => detectedIds.has(agent.id))
@@ -212,6 +218,15 @@ export function AgentsPane({
     cmdOverride: isDetected ? cmdOverrides[agent.id] : undefined,
     argsOverride: resolveTuiAgentLaunchArgs(agent.id, agentDefaultArgs),
     envOverride: resolveTuiAgentLaunchEnv(agent.id, agentDefaultEnv),
+    promptShortcuts: readAgentPromptShortcuts(agentPromptShortcuts, agent.id),
+    onSavePromptShortcuts: (shortcuts: AgentPromptShortcut[]) =>
+      updateSettings({
+        agentPromptShortcuts: applyAgentPromptShortcutsToAgent(
+          useAppStore.getState().settings?.agentPromptShortcuts ?? agentPromptShortcuts,
+          agent.id,
+          shortcuts
+        )
+      }),
     onSetDefault: isDetected ? () => updateSettings({ defaultTuiAgent: agent.id }) : () => {},
     onSetEnabled: (enabled) => setAgentEnabled(agent.id, enabled),
     onSaveOverride: isDetected

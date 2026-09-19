@@ -14,8 +14,14 @@ import type {
   SessionOptionDescriptor,
   SessionOptionsSurface
 } from '../../../../shared/native-chat-session-options'
-import type { NativeChatOptionPickerRequest } from './native-chat-composer-types'
+import type {
+  NativeChatOptionPickerRequest,
+  NativeChatPromptShortcut
+} from './native-chat-composer-types'
 import { NativeChatImageAttachmentPreview } from './NativeChatImageAttachmentPreview'
+
+const EMPTY_PROMPT_SHORTCUTS: readonly NativeChatPromptShortcut[] = []
+const NO_PROMPT_SHORTCUT = (): void => {}
 
 export type NativeChatComposerFieldProps = {
   /** Pane identity published to the drop pipeline so a native file drop lands
@@ -56,6 +62,9 @@ export type NativeChatComposerFieldProps = {
   sessionOptionsSurface: SessionOptionsSurface | null
   sessionOptionsSnapshot: SessionOptionDescriptor[]
   sessionOptionsPickerRequest?: NativeChatOptionPickerRequest | null
+  promptShortcuts?: readonly NativeChatPromptShortcut[]
+  promptShortcutsDisabled?: boolean
+  onSelectPromptShortcut?: (shortcut: NativeChatPromptShortcut) => void
 }
 
 export type NativeChatComposerImageAttachment = {
@@ -127,7 +136,10 @@ export function NativeChatComposerField({
   onStop,
   sessionOptionsSurface,
   sessionOptionsSnapshot,
-  sessionOptionsPickerRequest
+  sessionOptionsPickerRequest,
+  promptShortcuts = EMPTY_PROMPT_SHORTCUTS,
+  promptShortcutsDisabled = false,
+  onSelectPromptShortcut = NO_PROMPT_SHORTCUT
 }: NativeChatComposerFieldProps): React.JSX.Element {
   // Value the IME started from, and whether a programmatic clear was dropped on top of it.
   const compositionBaseRef = useRef('')
@@ -283,6 +295,9 @@ export function NativeChatComposerField({
                 sessionOptionsSurface={sessionOptionsSurface}
                 sessionOptionsSnapshot={sessionOptionsSnapshot}
                 sessionOptionsPickerRequest={sessionOptionsPickerRequest}
+                promptShortcuts={promptShortcuts}
+                promptShortcutsDisabled={promptShortcutsDisabled}
+                onSelectPromptShortcut={onSelectPromptShortcut}
               />
             </div>
           </div>

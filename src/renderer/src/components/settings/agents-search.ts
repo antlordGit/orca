@@ -31,6 +31,8 @@ function buildAgentSettingsKeywords(): string[] {
     { key: 'auto.components.settings.agents.search.60393e1b17', fallback: 'disable' },
     { key: 'auto.components.settings.agents.search.2e188c771c', fallback: 'hide' },
     { key: 'auto.components.settings.agents.search.87fffe6c20', fallback: 'show' },
+    { key: 'auto.components.settings.agents.search.shortcuts', fallback: 'shortcuts' },
+    { key: 'auto.components.settings.agents.search.prompts', fallback: 'prompts' },
     { key: 'auto.components.settings.agents.search.permission', fallback: 'permission' },
     { key: 'auto.components.settings.agents.search.permissions', fallback: 'permissions' },
     { key: 'auto.components.settings.agents.search.yolo', fallback: 'yolo', englishOnly: true },

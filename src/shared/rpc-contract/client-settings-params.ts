@@ -8,6 +8,7 @@ import {
   normalizeTuiAgentEnvRecord
 } from '../tui-agent-launch-defaults'
 import { normalizePRBotAuthorOverrides } from '../pr-bot-author-overrides'
+import { normalizeAgentPromptShortcuts } from '../agent-prompt-shortcuts'
 import { WorktreeVisibilityDefaultsUpdate } from './worktree-visibility-defaults-params'
 
 export const TaskProviderParam = z.custom<TaskProvider>(isTaskProvider, {
@@ -99,6 +100,10 @@ export const SettingsUpdate = z
     agentDefaultEnv: z
       .unknown()
       .transform((value) => normalizeTuiAgentEnvRecord(value))
+      .optional(),
+    agentPromptShortcuts: z
+      .unknown()
+      .transform((value) => normalizeAgentPromptShortcuts(value))
       .optional(),
     defaultTaskSource: TaskProviderParam.optional(),
     visibleTaskProviders: z.array(TaskProviderParam).optional(),

@@ -7,8 +7,45 @@ import { MobileDriverOverlay } from './MobileDriverOverlay'
 import { getDriverForPty } from '@/lib/pane-manager/mobile-driver-state'
 import { getFitOverrideForPty } from '@/lib/pane-manager/mobile-fit-overrides'
 import { shouldShowMobileDriverOverlay } from './mobile-driver-overlay-visibility'
+import { isTuiAgent } from '../../../../shared/tui-agent-config'
+import { TerminalAgentPromptShortcuts } from './TerminalAgentPromptShortcuts'
 import { shouldChatTakeOverMobileSurface } from '../native-chat/native-chat-send-eligibility'
 import type { TerminalPaneController } from './use-terminal-pane-controller'
+
+export function TerminalPaneAgentPromptShortcutPortals({
+  controller
+}: {
+  controller: TerminalPaneController
+}): React.JSX.Element | null {
+  const {
+    activePane,
+    activePaneIsChatLeaf,
+    effectiveChatViewMode,
+    isActive,
+    isRendererVisible,
+    paneTransportsRef,
+    tabAgentTypeByLeaf,
+    tabId
+  } = controller
+  if (
+    !isActive ||
+    !isRendererVisible ||
+    (effectiveChatViewMode && activePaneIsChatLeaf) ||
+    !activePane
+  ) {
+    return null
+  }
+  const transport = paneTransportsRef.current.get(activePane.id)
+  const agent = tabAgentTypeByLeaf[activePane.leafId]
+  if (!transport || !agent || !isTuiAgent(agent)) {
+    return null
+  }
+  return createPortal(
+    <TerminalAgentPromptShortcuts tabId={tabId} agent={agent} transport={transport} />,
+    activePane.container,
+    `terminal-agent-prompt-shortcuts-${activePane.id}`
+  )
+}
 
 export function TerminalPaneCodexRestartPortals({
   controller

@@ -14,6 +14,13 @@ export type NativeChatOptionPickerRequest = {
   sequence: number
 }
 
+/** One saved prompt the composer can send in a single click, already filtered by agent + enabled. */
+export type NativeChatPromptShortcut = {
+  id: string
+  name: string
+  content: string
+}
+
 export type NativeChatStructuredComposerTransport = {
   conversationCommands?: readonly AgentSessionConversationCommand[]
   send: (text: string, attachments: readonly NativeChatComposerImageAttachment[]) => boolean

@@ -7,7 +7,14 @@ import type {
   SessionOptionsSurface
 } from '../../../../shared/native-chat-session-options'
 import { NativeChatSessionOptionPickers } from './NativeChatSessionOptionPickers'
-import type { NativeChatOptionPickerRequest } from './native-chat-composer-types'
+import { NativeChatComposerShortcuts } from './NativeChatComposerShortcuts'
+import type {
+  NativeChatOptionPickerRequest,
+  NativeChatPromptShortcut
+} from './native-chat-composer-types'
+
+const EMPTY_PROMPT_SHORTCUTS: readonly NativeChatPromptShortcut[] = []
+const NO_PROMPT_SHORTCUT = (): void => {}
 
 export type NativeChatComposerActionsProps = {
   attachDisabled: boolean
@@ -25,6 +32,9 @@ export type NativeChatComposerActionsProps = {
   sessionOptionsSurface: SessionOptionsSurface | null
   sessionOptionsSnapshot: SessionOptionDescriptor[]
   sessionOptionsPickerRequest?: NativeChatOptionPickerRequest | null
+  promptShortcuts?: readonly NativeChatPromptShortcut[]
+  promptShortcutsDisabled?: boolean
+  onSelectPromptShortcut?: (shortcut: NativeChatPromptShortcut) => void
 }
 
 export function NativeChatComposerActions({
@@ -42,7 +52,10 @@ export function NativeChatComposerActions({
   onStop,
   sessionOptionsSurface,
   sessionOptionsSnapshot,
-  sessionOptionsPickerRequest
+  sessionOptionsPickerRequest,
+  promptShortcuts = EMPTY_PROMPT_SHORTCUTS,
+  promptShortcutsDisabled = false,
+  onSelectPromptShortcut = NO_PROMPT_SHORTCUT
 }: NativeChatComposerActionsProps): React.JSX.Element {
   const handleCriticalAction = (event: React.MouseEvent<HTMLButtonElement>): void => {
     // A double-click commonly lands after the first send has started and the button has
@@ -80,6 +93,11 @@ export function NativeChatComposerActions({
             {translate('components.native-chat.composer.attach', 'Attach file')}
           </TooltipContent>
         </Tooltip>
+        <NativeChatComposerShortcuts
+          shortcuts={promptShortcuts}
+          disabled={promptShortcutsDisabled}
+          onSelect={onSelectPromptShortcut}
+        />
       </div>
       <div className="ml-auto flex items-center gap-1.5">
         {/* Why: keep session controls beside the actions they affect; the

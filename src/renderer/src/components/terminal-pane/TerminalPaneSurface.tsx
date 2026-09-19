@@ -17,6 +17,7 @@ import { TerminalQuickCommandEditorDialog } from './TerminalQuickCommandEditorDi
 import { TerminalPaneNativeChatPortal } from './TerminalPaneNativeChatPortal'
 import {
   TerminalPaneCodexRestartPortals,
+  TerminalPaneAgentPromptShortcutPortals,
   TerminalPaneMobileDriverPortals,
   TerminalPaneProcessExitPortals,
   TerminalPaneRecoveryPortals,
@@ -220,6 +221,7 @@ export function TerminalPaneSurface({
         panes={managerRef.current?.getPanes() ?? []}
         paneIds={sessionRestoredBannerPaneIds}
       />
+      <TerminalPaneAgentPromptShortcutPortals controller={controller} />
       <TerminalPaneNativeChatPortal controller={controller} />
       <TerminalContextMenu
         open={contextMenu.open}

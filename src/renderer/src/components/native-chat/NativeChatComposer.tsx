@@ -29,6 +29,10 @@ import type {
   NativeChatComposerHandle,
   NativeChatComposerProps
 } from './native-chat-composer-types'
+import {
+  useNativeChatComposerSendActions,
+  useNativeChatPromptShortcuts
+} from './use-native-chat-prompt-shortcuts'
 import { useNativeChatPtyComposerSend } from './use-native-chat-pty-composer-send'
 import { useNativeChatStructuredComposerSend } from './use-native-chat-structured-composer-send'
 import { useImeEnterGestureOwnership } from '@/lib/ime-composition-keyboard-event'
@@ -286,24 +290,16 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       clearImageAttachments,
       setNotice
     })
-    const send = useCallback(() => {
-      if (hasPendingAttachment) {
-        return
-      }
-      if (!structuredTransport) {
-        sendPty()
-      } else if ((draft.trim() !== '' || imageAttachments.length > 0) && !disabled) {
-        sendStructured(draft, imageAttachments)
-      }
-    }, [
+    const promptShortcuts = useNativeChatPromptShortcuts(agent)
+    const { send, sendPromptShortcut } = useNativeChatComposerSendActions({
       disabled,
       draft,
       hasPendingAttachment,
       imageAttachments,
-      sendPty,
+      structuredTransport,
       sendStructured,
-      structuredTransport
-    ])
+      sendPty
+    })
 
     const interrupt = useCallback(() => {
       cancelPendingSends()
@@ -430,6 +426,9 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
         sessionOptionsSurface={sessionOptionsSurface}
         sessionOptionsSnapshot={sessionOptionsSnapshot}
         sessionOptionsPickerRequest={structuredTransport?.optionPickerRequest ?? null}
+        promptShortcuts={promptShortcuts}
+        promptShortcutsDisabled={disabled}
+        onSelectPromptShortcut={sendPromptShortcut}
       />
     )
   }
