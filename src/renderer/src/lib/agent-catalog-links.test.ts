@@ -10,4 +10,14 @@ describe('agent catalog documentation links', () => {
       'https://code.claude.com/docs/en/agent-teams'
     )
   })
+
+  it('includes CodeBuddy with its executable and homepage', () => {
+    const entry = getAgentCatalog().find((candidate) => candidate.id === 'codebuddy')
+
+    expect(entry).toMatchObject({
+      label: 'CodeBuddy',
+      cmd: 'codebuddy',
+      homepageUrl: 'https://www.codebuddy.cn/docs/ide/Introduction'
+    })
+  })
 })

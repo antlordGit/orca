@@ -103,6 +103,10 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     draftPasteReadyTimeoutMs: 20_000,
     submitRetryDelayMs: 1200
   },
+  codebuddy: {
+    detectCmd: 'codebuddy',
+    promptInjectionMode: 'argv'
+  },
   autohand: {
     detectCmd: 'autohand',
     promptInjectionMode: 'stdin-after-start'

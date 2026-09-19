@@ -24,6 +24,16 @@ describe('getAgentSlashCommands', () => {
     expect(names).not.toContain('model')
   })
 
+  it('returns the known CodeBuddy commands', () => {
+    expect(getAgentSlashCommands('codebuddy').map((command) => command.name)).toEqual([
+      'help',
+      'init',
+      'rules',
+      'login',
+      'logout'
+    ])
+  })
+
   it('falls back to a small common set for an unknown agent (never empty)', () => {
     const names = getAgentSlashCommands('some-other-agent').map((c) => c.name)
     expect(names).toEqual(['clear', 'help'])

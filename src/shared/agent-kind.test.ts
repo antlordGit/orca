@@ -29,6 +29,10 @@ describe('tuiAgentToAgentKind', () => {
     expect(tuiAgentToAgentKind('claude')).toBe('claude-code')
     expect(tuiAgentToAgentKind('pi')).toBe('pi')
   })
+
+  it('uses the CodeBuddy product id for CodeBuddy', () => {
+    expect(tuiAgentToAgentKind('codebuddy')).toBe('codebuddy')
+  })
 })
 
 describe('agentKindToTuiAgent', () => {

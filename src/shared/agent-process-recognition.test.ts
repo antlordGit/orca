@@ -395,4 +395,16 @@ describe('agent process recognition', () => {
       processName: 'grok-0.2.51'
     })
   })
+
+  it('recognizes CodeBuddy foreground processes', () => {
+    const codebuddy = { agent: 'codebuddy', processName: 'codebuddy' }
+
+    expect(recognizeAgentProcess('codebuddy')).toEqual(codebuddy)
+    expect(recognizeAgentProcess('/usr/local/bin/codebuddy')).toEqual(codebuddy)
+    expect(
+      recognizeAgentProcess(String.raw`C:\\Users\\dev\\AppData\\Roaming\\npm\\codebuddy.cmd`)
+    ).toEqual(codebuddy)
+    expect(isExpectedAgentProcess('/usr/local/bin/codebuddy', 'codebuddy')).toBe(true)
+    expect(isRecognizedAgentType('codebuddy')).toBe(true)
+  })
 })

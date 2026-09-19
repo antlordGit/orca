@@ -107,6 +107,7 @@ describe('skills CLI agent keys', () => {
   })
 
   it("follows Orca's own evidence for the two non-obvious mappings", () => {
+    expect(SKILLS_CLI_AGENT_KEY_BY_TUI_AGENT.codebuddy).toBe('codebuddy')
     // Why: src/shared/native-chat-agent-profiles.ts states OpenClaude reads
     // Claude-owned roots, so it is not unmappable.
     expect(SKILLS_CLI_AGENT_KEY_BY_TUI_AGENT.openclaude).toBe('claude-code')

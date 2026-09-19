@@ -106,4 +106,8 @@ describe('resolveTuiAgentLaunchArgs', () => {
     expect(resolveTuiAgentLaunchArgs('claude', {})).toBe('--dangerously-skip-permissions')
     expect(resolveTuiAgentLaunchArgs('claude', { claude: '' })).toBe('')
   })
+
+  it('keeps CodeBuddy manual because it has no YOLO default', () => {
+    expect(resolveTuiAgentLaunchArgs('codebuddy', {})).toBe('')
+  })
 })

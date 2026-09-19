@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   haveSameDisabledTuiAgents,
   normalizeDisabledTuiAgents,
-  pickTuiAgent
+  pickTuiAgent,
+  TUI_AGENT_AUTO_PICK_ORDER
 } from './tui-agent-selection'
 
 describe('pickTuiAgent', () => {
@@ -14,6 +15,10 @@ describe('pickTuiAgent', () => {
     expect(pickTuiAgent(null, ['cursor', 'codex'])).toBe('codex')
     expect(pickTuiAgent('gemini', ['cursor', 'codex'])).toBe('codex')
     expect(pickTuiAgent(null, ['continue', 'command-code'])).toBe('command-code')
+  })
+
+  it('includes CodeBuddy in the automatic pick order', () => {
+    expect(TUI_AGENT_AUTO_PICK_ORDER).toContain('codebuddy')
   })
 
   it('respects the explicit blank terminal preference', () => {
