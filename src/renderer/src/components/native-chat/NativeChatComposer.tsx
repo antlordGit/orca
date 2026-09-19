@@ -24,6 +24,7 @@ import type {
   NativeChatComposerHandle,
   NativeChatComposerProps
 } from './native-chat-composer-types'
+import { useNativeChatPromptShortcuts } from './use-native-chat-prompt-shortcuts'
 import { useNativeChatPtyComposerSend } from './use-native-chat-pty-composer-send'
 import { useNativeChatStructuredComposerSend } from './use-native-chat-structured-composer-send'
 import { useImeEnterGestureOwnership } from '@/lib/ime-composition-keyboard-event'
@@ -294,7 +295,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       optimisticSendOutcome,
       terminalTabId
     })
-    const { send, goalMode } = useNativeChatComposerSubmit({
+    const promptShortcuts = useNativeChatPromptShortcuts(agent)
+    const { send, sendPromptShortcut, goalMode } = useNativeChatComposerSubmit({
       structuredTransport,
       draftScopeKey,
       draft,
@@ -422,6 +424,9 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
         contextUsage={contextUsageSummary}
         sessionOptionsPickerRequest={structuredTransport?.optionPickerRequest ?? null}
         agent={agent}
+        promptShortcuts={promptShortcuts}
+        promptShortcutsDisabled={disabled}
+        onSelectPromptShortcut={sendPromptShortcut}
       />
     )
   }

@@ -8,6 +8,7 @@ import { getDefaultSourceControlAiSettings } from './source-control-ai-settings'
 import { DEFAULT_APP_ICON_ID } from './app-icon'
 import { DEFAULT_OPEN_IN_APPLICATIONS } from './open-in-applications'
 import { DEFAULT_DISABLED_TUI_AGENTS } from './tui-agent-selection'
+import { DEFAULT_TUI_AGENT_ARGS, DEFAULT_TUI_AGENT_ENV } from './tui-agent-launch-defaults'
 import { UI_LANGUAGE_SYSTEM } from './ui-language'
 import {
   DEFAULT_LEFT_SIDEBAR_TINT_COLOR,
@@ -225,9 +226,10 @@ export function buildDefaultSettings(args: {
     zcodePlanSite: 'zai',
     geminiCliOAuthEnabled: false,
     agentCmdOverrides: {},
-    // Arguments hold only the user's own text; the permission flag comes from the choice below.
-    agentDefaultArgs: {},
-    agentDefaultEnv: {},
+    agentDefaultArgs: { ...DEFAULT_TUI_AGENT_ARGS },
+    agentDefaultEnv: { ...DEFAULT_TUI_AGENT_ENV },
+    // Why: hydrate a stable empty map so renderer reads never hit undefined.
+    agentPromptShortcuts: {},
     agentYoloDefaultsMigrated: true,
     agentPermissionDefault: 'full-access',
     agentPermissionOverrides: {},

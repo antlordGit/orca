@@ -21,6 +21,7 @@ import { TerminalPaneNativeChatPortal } from './TerminalPaneNativeChatPortal'
 import { TerminalPaneSleepingPortals } from './TerminalPaneSleepingPortals'
 import {
   TerminalPaneCodexRestartPortals,
+  TerminalPaneAgentPromptShortcutPortals,
   TerminalPaneMobileDriverPortals,
   TerminalPaneProcessExitPortals,
   TerminalPaneRecoveryPortals,
@@ -246,6 +247,7 @@ export function TerminalPaneSurface({
         panes={managerRef.current?.getPanes() ?? []}
         paneIds={sessionRestoredBannerPaneIds}
       />
+      <TerminalPaneAgentPromptShortcutPortals controller={controller} />
       <TerminalPaneNativeChatPortal controller={controller} />
       <TerminalContextMenu
         open={contextMenu.open}

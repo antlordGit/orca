@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { Check, ChevronDown, ExternalLink } from 'lucide-react'
 import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { AgentPromptShortcut } from '../../../../shared/agent-prompt-shortcuts'
+import { AgentPromptShortcutManager } from './AgentPromptShortcutManager'
 import { AgentIcon } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
@@ -81,6 +83,8 @@ export type AgentCatalogRowProps = {
   cmdOverride: string | undefined
   argsOverride: string
   envOverride: Record<string, string>
+  promptShortcuts: readonly AgentPromptShortcut[]
+  onSavePromptShortcuts: (shortcuts: AgentPromptShortcut[]) => void
   onSetDefault: () => void
   onSetEnabled: (enabled: boolean) => void
   onSaveOverride: (value: string) => void | Promise<void>
@@ -111,6 +115,8 @@ export function AgentCatalogRow({
   cmdOverride,
   argsOverride,
   envOverride,
+  promptShortcuts,
+  onSavePromptShortcuts,
   onSetDefault,
   onSetEnabled,
   onSaveOverride,
@@ -348,6 +354,10 @@ export function AgentCatalogRow({
               </p>
             </div>
           )}
+          <AgentPromptShortcutManager
+            shortcuts={promptShortcuts}
+            onChange={onSavePromptShortcuts}
+          />
         </div>
       )}
     </div>

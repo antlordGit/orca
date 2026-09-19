@@ -11,7 +11,14 @@ import { NativeChatComposerPermissionPicker } from './NativeChatPermissionModePi
 import { NativeChatComposerGoalChip } from './NativeChatComposerGoalChip'
 import { NativeChatContextUsageRing } from './NativeChatContextUsageRing'
 import type { NativeChatContextUsageSummary } from './native-chat-context-usage-summary'
-import type { NativeChatOptionPickerRequest } from './native-chat-composer-types'
+import { NativeChatComposerShortcuts } from './NativeChatComposerShortcuts'
+import type {
+  NativeChatOptionPickerRequest,
+  NativeChatPromptShortcut
+} from './native-chat-composer-types'
+
+const EMPTY_PROMPT_SHORTCUTS: readonly NativeChatPromptShortcut[] = []
+const NO_PROMPT_SHORTCUT = (): void => {}
 
 export type NativeChatComposerActionsProps = {
   attachDisabled: boolean
@@ -42,6 +49,9 @@ export type NativeChatComposerActionsProps = {
   contextUsage?: NativeChatContextUsageSummary | null
   /** The chat's agent, whose permission modes the picker describes. */
   agent?: string
+  promptShortcuts?: readonly NativeChatPromptShortcut[]
+  promptShortcutsDisabled?: boolean
+  onSelectPromptShortcut?: (shortcut: NativeChatPromptShortcut) => void
 }
 
 export function NativeChatComposerActions({
@@ -66,7 +76,10 @@ export function NativeChatComposerActions({
   onExitGoalMode,
   contextUsage,
   focusComposer,
-  agent
+  agent,
+  promptShortcuts = EMPTY_PROMPT_SHORTCUTS,
+  promptShortcutsDisabled = false,
+  onSelectPromptShortcut = NO_PROMPT_SHORTCUT
 }: NativeChatComposerActionsProps): React.JSX.Element {
   const stops = isWorking
   const handleCriticalAction = (event: React.MouseEvent<HTMLButtonElement>): void => {
@@ -135,6 +148,11 @@ export function NativeChatComposerActions({
           {...(agent ? { agent } : {})}
         />
         {onExitGoalMode ? <NativeChatComposerGoalChip onExit={onExitGoalMode} /> : null}
+        <NativeChatComposerShortcuts
+          shortcuts={promptShortcuts}
+          disabled={promptShortcutsDisabled}
+          onSelect={onSelectPromptShortcut}
+        />
       </div>
       <div className="ml-auto flex items-center gap-1.5">
         {/* Why: keep the session picker beside the actions it affects; only the

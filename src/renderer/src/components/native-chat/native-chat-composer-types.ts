@@ -33,6 +33,13 @@ export type NativeChatOptionPickerRequest = {
   consume: () => void
 }
 
+/** One saved prompt the composer can send in a single click, already filtered by agent + enabled. */
+export type NativeChatPromptShortcut = {
+  id: string
+  name: string
+  content: string
+}
+
 export type NativeChatStructuredComposerTransport = {
   capturePresentation: CaptureStructuredAgentSessionPresentation
   conversationCommands?: readonly AgentSessionConversationCommand[]

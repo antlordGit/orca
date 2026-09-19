@@ -10,6 +10,7 @@ import type {
   AgentLaunchSettingsMutation
 } from '../../../../shared/agent-launch-settings'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
+import { readAgentPromptShortcuts } from '../../../../shared/agent-prompt-shortcuts'
 import { AUTO_TUI_AGENT_ARGS } from '../../../../shared/tui-agent-permissions'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import {
@@ -197,6 +198,9 @@ export function AgentLaunchSettingsCatalog({
       : typed
         ? resolveTuiAgentLaunchEnv(agent.id, local.settings, window.api.platform.get().platform)
         : resolveTuiAgentLaunchEnv(agent.id, { agentDefaultEnv: local.settings.agentDefaultEnv }),
+    promptShortcuts: readAgentPromptShortcuts(local?.settings.agentPromptShortcuts, agent.id),
+    onSavePromptShortcuts: (shortcuts) =>
+      save({ type: 'prompt-shortcuts', agent: agent.id, shortcuts }),
     permission: typed ? undefined : permissions.rows.get(agent.id),
     permissionChoice: choiceRow(agent.id),
     onSetDefault: () =>

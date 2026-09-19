@@ -9,6 +9,7 @@ import {
 } from '../tui-agent-launch-defaults'
 import { MACHINE_NAME_MAX_LENGTH } from '../machine-name'
 import { normalizePRBotAuthorOverrides } from '../pr-bot-author-overrides'
+import { normalizeAgentPromptShortcuts } from '../agent-prompt-shortcuts'
 import { WorktreeVisibilityDefaultsUpdate } from './worktree-visibility-defaults-params'
 import { AGENT_CHAT_PERMISSION_MODES } from '../agent-chat-permission-mode'
 
@@ -105,6 +106,10 @@ export const SettingsUpdate = z
     agentDefaultEnv: z
       .unknown()
       .transform((value) => normalizeTuiAgentEnvRecord(value))
+      .optional(),
+    agentPromptShortcuts: z
+      .unknown()
+      .transform((value) => normalizeAgentPromptShortcuts(value))
       .optional(),
     defaultTaskSource: TaskProviderParam.optional(),
     visibleTaskProviders: z.array(TaskProviderParam).optional(),

@@ -4,7 +4,10 @@ import {
   applyPickerSuggestion,
   type NativeChatPickerItem
 } from '../../../../shared/native-chat-picker-items'
-import type { NativeChatStructuredComposerTransport } from './native-chat-composer-types'
+import type {
+  NativeChatPromptShortcut,
+  NativeChatStructuredComposerTransport
+} from './native-chat-composer-types'
 import type { NativeChatComposerImageAttachment } from './NativeChatComposerField'
 import { nativeChatImagesHoldSend } from './native-chat-image-reattach'
 import {
@@ -45,13 +48,17 @@ export function useNativeChatComposerSubmit(args: {
   caret: number
   imageAttachments: readonly NativeChatComposerImageAttachment[]
   disabled: boolean
-  sendPty: () => void
+  sendPty: (text?: string) => void
   sendStructured: (text: string, attachments: readonly NativeChatComposerImageAttachment[]) => void
   /** Runs a command Orca owns, like `/resume`; true means the draft never reaches the agent. */
   consumeOrcaCommand?: (draft: string) => boolean
   setDraft: (value: string) => void
   setCaret: (caret: number) => void
-}): { send: () => void; goalMode: NativeChatComposerGoalMode } {
+}): {
+  send: () => void
+  sendPromptShortcut: (shortcut: NativeChatPromptShortcut) => void
+  goalMode: NativeChatComposerGoalMode
+} {
   const { caret, disabled, draft, draftScopeKey, imageAttachments, sendPty, sendStructured } = args
   const { consumeOrcaCommand, setCaret, setDraft, structuredTransport } = args
   const threadGoal = structuredTransport?.threadGoal
@@ -158,7 +165,21 @@ export function useNativeChatComposerSubmit(args: {
     threadGoal
   ])
 
+  const sendPromptShortcut = useCallback(
+    (shortcut: NativeChatPromptShortcut): void => {
+      if (disabled) {
+        return
+      }
+      if (structuredTransport) {
+        sendStructured(shortcut.content, [])
+      } else {
+        sendPty(shortcut.content)
+      }
+    },
+    [disabled, sendPty, sendStructured, structuredTransport]
+  )
+
   const exit = useCallback(() => setEntered(false), [])
   const goalMode = useMemo(() => ({ active, exit, interceptPick }), [active, exit, interceptPick])
-  return { send, goalMode }
+  return { send, sendPromptShortcut, goalMode }
 }

@@ -1,3 +1,7 @@
+import {
+  applyAgentPromptShortcutsToAgent,
+  type AgentPromptShortcut
+} from './agent-prompt-shortcuts'
 import { agentEnvironmentMutationUpdates, choiceUpdate } from './agent-launch-environment-updates'
 import type { GlobalSettings } from './global-settings-types'
 import {
@@ -46,6 +50,7 @@ export type AgentLaunchSettingsSource = Partial<
     | 'agentDefaultEnv'
     | 'agentPermissionDefault'
     | 'agentPermissionOverrides'
+    | 'agentPromptShortcuts'
     | 'nativeChatPermissionMode'
     | 'agentNativeChatPermissionModes'
   >
@@ -98,6 +103,7 @@ export type AgentLaunchSettingsMutation =
   | { type: 'user-arguments'; agent: TuiAgent; value: string }
   | { type: 'environment-set'; agent: TuiAgent; name: string; value: string }
   | { type: 'environment-remove'; agent: TuiAgent; name: string }
+  | { type: 'prompt-shortcuts'; agent: TuiAgent; shortcuts: AgentPromptShortcut[] }
 
 export function projectAgentLaunchSettings(
   settings: AgentLaunchSettingsSource,
@@ -288,5 +294,13 @@ export function agentLaunchSettingsMutationUpdates(
     case 'environment-set':
     case 'environment-remove':
       return agentEnvironmentMutationUpdates(settings, mutation, platform)
+    case 'prompt-shortcuts':
+      return {
+        agentPromptShortcuts: applyAgentPromptShortcutsToAgent(
+          settings.agentPromptShortcuts,
+          mutation.agent,
+          mutation.shortcuts
+        )
+      }
   }
 }

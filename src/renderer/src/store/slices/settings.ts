@@ -11,6 +11,7 @@ import { unwrapRuntimeRpcResult } from '@/runtime/runtime-rpc-result'
 import { assertRuntimeStatusCompatible } from '@/runtime/runtime-protocol-compat'
 import type { RuntimeStatus } from '../../../../shared/runtime-types'
 import { normalizeTerminalQuickCommands } from '../../../../shared/terminal-quick-commands'
+import { normalizeAgentPromptShortcuts } from '../../../../shared/agent-prompt-shortcuts'
 import { assertTerminalQuickCommandsStorable } from '../../../../shared/terminal-quick-command-prompt-limit'
 import { normalizeTerminalCustomThemes } from '../../../../shared/terminal-custom-themes'
 import { normalizeTaskProviderSettings } from '../../../../shared/task-providers'
@@ -104,6 +105,11 @@ function normalizeSettingsUpdates(
     sanitizedUpdates.disabledTuiAgents = normalizeDisabledTuiAgents(updates.disabledTuiAgents)
   }
   sanitizeAgentLaunchProfileUpdates(sanitizedUpdates, updates)
+  if ('agentPromptShortcuts' in updates) {
+    sanitizedUpdates.agentPromptShortcuts = normalizeAgentPromptShortcuts(
+      updates.agentPromptShortcuts
+    )
+  }
   if ('uiLanguage' in updates) {
     sanitizedUpdates.uiLanguage = normalizeUiLanguage(updates.uiLanguage)
   }
