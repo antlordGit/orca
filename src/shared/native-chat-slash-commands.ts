@@ -128,11 +128,20 @@ const OMP_COMMANDS: readonly SlashCommandSuggestion[] = [
   { name: 'hotkeys', description: 'Show keyboard shortcuts in Terminal' }
 ]
 
+const CODEBUDDY_COMMANDS: readonly SlashCommandSuggestion[] = [
+  { name: 'help', description: 'Show available commands' },
+  { name: 'init', description: 'Initialize CodeBuddy in the current project' },
+  { name: 'rules', description: 'Manage project rules' },
+  { name: 'login', description: 'Log in to CodeBuddy' },
+  { name: 'logout', description: 'Log out of CodeBuddy' }
+]
+
 const COMMANDS_BY_AGENT: Partial<Record<AgentType, readonly SlashCommandSuggestion[]>> = {
   claude: CLAUDE_COMMANDS,
   openclaude: OPENCLAUDE_COMMANDS,
   codex: CODEX_COMMANDS,
-  omp: OMP_COMMANDS
+  omp: OMP_COMMANDS,
+  codebuddy: CODEBUDDY_COMMANDS
 }
 
 /** Known slash commands for an agent, falling back to a small common set so the

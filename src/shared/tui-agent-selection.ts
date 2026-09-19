@@ -9,6 +9,7 @@ export const TUI_AGENT_AUTO_PICK_ORDER = [
   'claude-agent-teams',
   'openclaude',
   'codex',
+  'codebuddy',
   'grok',
   'copilot',
   'opencode2',
@@ -48,7 +49,6 @@ export const TUI_AGENT_AUTO_PICK_ORDER = [
   'hermes',
   'devin',
   'openclaw',
-  'codebuddy',
   'jcode'
 ] as const satisfies readonly TuiAgent[]
 

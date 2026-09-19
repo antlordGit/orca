@@ -18,6 +18,15 @@ describe('TUI_AGENT_CONFIG', () => {
     })
   })
 
+  it('configures CodeBuddy as an argv-launched codebuddy process', () => {
+    expect(TUI_AGENT_CONFIG.codebuddy).toMatchObject({
+      detectCmd: 'codebuddy',
+      launchCmd: 'codebuddy',
+      expectedProcess: 'codebuddy',
+      promptInjectionMode: 'argv'
+    })
+  })
+
   it('keeps explicit overrides where the launch line or process differs from the binary', () => {
     const overrides: Partial<Record<TuiAgent, Partial<(typeof TUI_AGENT_CONFIG)[TuiAgent]>>> = {
       'claude-agent-teams': { launchCmd: 'orca claude-teams', expectedProcess: 'claude' },

@@ -136,4 +136,8 @@ describe('resolveTuiAgentLaunchArgs', () => {
     expect(resolveTuiAgentLaunchArgs('omp', {})).toBe('')
     expect(resolveTuiAgentLaunchArgs('opencode', {})).toBe('')
   })
+
+  it('keeps CodeBuddy manual because it has no YOLO default', () => {
+    expect(resolveTuiAgentLaunchArgs('codebuddy', {})).toBe('')
+  })
 })
