@@ -1,3 +1,6 @@
+# Local dev-mode plugins (loaded via Settings → Plugins → dev plugin paths).
+dev-plugins/
+
 # Build artifacts
 tsconfig.*.tsbuildinfo
 
@@ -103,9 +106,6 @@ docs/**
 !docs/readme/
 !docs/readme/**
 !docs/STYLEGUIDE.md
-!docs/audits/
-!docs/audits/crashpad-read-limit/
-!docs/audits/crashpad-read-limit/source-hashes.json
 !docs/agent-skill-sharing-implementation-checklist.md
 !docs/mobile-terminal-shortcut-bar.md
 !docs/reference/
