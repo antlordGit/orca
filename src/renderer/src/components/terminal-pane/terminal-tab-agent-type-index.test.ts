@@ -1,12 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentStatusEntry } from '../../../../shared/agent-status-types'
-import { createTerminalTabAgentTypeSelector } from './terminal-tab-agent-type-index'
+import {
+  createTerminalTabAgentTypeSelector,
+  selectLiveTerminalTabAgentTypesByLeaf
+} from './terminal-tab-agent-type-index'
 
 function entry(agentType: AgentStatusEntry['agentType'], state = 'working'): AgentStatusEntry {
   return { agentType, state, updatedAt: 0 } as AgentStatusEntry
 }
 
 describe('createTerminalTabAgentTypeSelector', () => {
+  it('selects only panes with a non-done agent for terminal input routing', () => {
+    const state = {
+      'tab-1:leaf-working': entry('claude', 'working'),
+      'tab-1:leaf-done': entry('codex', 'done'),
+      'tab-1:leaf-shell': entry(undefined, 'working')
+    }
+
+    expect(selectLiveTerminalTabAgentTypesByLeaf(state, 'tab-1')).toEqual({
+      'leaf-working': 'claude'
+    })
+  })
+
   it('scans one global map only once across all mounted tab selectors', () => {
     const onEntryVisited = vi.fn()
     const select = createTerminalTabAgentTypeSelector({ onEntryVisited })

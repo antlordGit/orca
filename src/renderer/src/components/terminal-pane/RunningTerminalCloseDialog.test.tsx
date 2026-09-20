@@ -109,9 +109,6 @@ describe('RunningTerminalCloseDialog', () => {
     await renderDialog({ onConfirm: vi.fn(), copyKind: 'agent' }, updateSettings)
 
     expect(document.body.textContent).toContain('Stop this agent?')
-    expect(document.body.textContent).toContain(
-      'This terminal will not resume automatically. Cancel and put the workspace to sleep to resume it later.'
-    )
     expect(getButton('Stop Agent')).toBeTruthy()
   })
 

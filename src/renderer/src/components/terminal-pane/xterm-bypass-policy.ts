@@ -176,14 +176,8 @@ export function shouldSuppressTerminalImeKeyboardEvent(
   // candidate commits outside a composition session). Windows keeps full
   // suppression until verified against its preedit-diff race.
   const passesStandalone229Keydown = isMac || isLinux
-  const passesIdleComposing229Keydown =
-    event.type === 'keydown' &&
-    event.keyCode === 229 &&
-    event.isComposing === true &&
-    !compositionActive &&
-    passesStandalone229Keydown
   return (
-    (event.isComposing === true && !passesIdleComposing229Keydown) ||
+    event.isComposing === true ||
     (event.keyCode === 229 &&
       (event.type !== 'keydown' || compositionActive || !passesStandalone229Keydown)) ||
     (compositionActive && TERMINAL_IME_OWNED_KEYS.has(event.key)) ||

@@ -70,20 +70,6 @@ export function applyTerminalRecordUpdates(context: TerminalRecordContext) {
     nextTerminalLayoutsByTabId[tab.id] = layout
   }
 
-  // Why removal only: the local-only home follows a retired tab out, but a host frame never
-  // rewrites a live tab's entry — that immunity is the point of keeping it outside the layout.
-  let nextLocalOnlyScrollbackByTabId = state.localOnlyScrollbackByTabId
-  for (const removedId of removedTerminalResourceIds) {
-    if (!nextLocalOnlyScrollbackByTabId?.[removedId]) {
-      continue
-    }
-    nextLocalOnlyScrollbackByTabId =
-      nextLocalOnlyScrollbackByTabId === state.localOnlyScrollbackByTabId
-        ? writableWebSessionTabsRecord(state, 'localOnlyScrollbackByTabId', batchContext)
-        : nextLocalOnlyScrollbackByTabId
-    delete nextLocalOnlyScrollbackByTabId[removedId]
-  }
-
   let nextUnreadTerminalTabs = state.unreadTerminalTabs
   for (const removedId of removedTerminalIds) {
     if (!nextUnreadTerminalTabs[removedId]) {
@@ -121,7 +107,6 @@ export function applyTerminalRecordUpdates(context: TerminalRecordContext) {
     ...context,
     nextPtyIdsByTabId,
     nextTerminalLayoutsByTabId,
-    nextLocalOnlyScrollbackByTabId,
     nextUnreadTerminalTabs,
     pendingStartupByTabId,
     nextPendingStartupByTabId,

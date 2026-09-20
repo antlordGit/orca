@@ -11,10 +11,7 @@ import {
   type PRRefreshValidationDenialReason
 } from '../github/pr-refresh-validation-backoff'
 import type { Store } from '../persistence'
-import {
-  getLocalProjectGhExecOptions,
-  type LocalProjectGhExecOptions
-} from '../project-runtime-git-options'
+import { getLocalProjectWorktreeGitOptions } from '../project-runtime-git-options'
 
 export type GitHubRepoScopedArgs = {
   repoPath: string
@@ -83,8 +80,8 @@ export function getGitHubRepoConnectionId(repo: Repo): string | null {
 export function getGitHubLocalGitOptionArgs(
   store: Store,
   repo: Repo
-): [] | [LocalProjectGhExecOptions] {
-  const localGitOptions = getLocalProjectGhExecOptions(store, repo)
+): [] | [{ wslDistro?: string }] {
+  const localGitOptions = getLocalProjectWorktreeGitOptions(store, repo)
   return Object.keys(localGitOptions).length > 0 ? [localGitOptions] : []
 }
 

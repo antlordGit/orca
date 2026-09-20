@@ -146,6 +146,7 @@ export function registerPtyHandlers(
     runtime,
     getSettings,
     getSelectedCodexHomePath,
+    store,
     trustedTerminalHandleEnv: session.trustedTerminalHandleEnv
   })
   installSessionSshOutputIntake(session)

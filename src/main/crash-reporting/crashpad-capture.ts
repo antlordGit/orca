@@ -6,12 +6,10 @@
 // bundle. We keep dumps on disk and lift the *text* signature out of them, so
 // a CHECK failure becomes nameable without shipping raw memory anywhere.
 
-import { constants as fsConstants } from 'node:fs'
 import type { Dirent } from 'node:fs'
-import { open, readdir, rm, stat } from 'node:fs/promises'
+import { readdir, readFile, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { app, crashReporter } from 'electron'
-import { createMinidumpFileSource, observeMinidumpExtent } from './minidump-file-source'
 import {
   parseMinidumpCrashSignature,
   type MinidumpCrashSignature
@@ -232,7 +230,7 @@ function freshDumpCandidates(candidates: DumpCandidate[], crashedAtMs: number): 
 async function pollDumpCandidates<T>(
   crashedAtMs: number,
   options: DumpPollingOptions,
-  select: (candidate: DumpCandidate, deadlineMs: number) => Promise<T | null>
+  select: (candidate: DumpCandidate) => Promise<T | null>
 ): Promise<T | null> {
   const directory = crashpadDumpDirectory
   if (!directory) {
@@ -247,7 +245,7 @@ async function pollDumpCandidates<T>(
   for (;;) {
     const fresh = freshDumpCandidates(await collectDumpCandidates(directory), crashedAtMs)
     for (const candidate of fresh) {
-      const selected = await select(candidate, deadline)
+      const selected = await select(candidate)
       if (selected !== null) {
         return selected
       }
@@ -284,7 +282,7 @@ export async function captureMinidumpSignature(
 ): Promise<CapturedMinidump | null> {
   const rejectedDumpPaths = new Set<string>()
   try {
-    return await pollDumpCandidates(crashedAtMs, options, async (dump, deadlineMs) => {
+    return await pollDumpCandidates(crashedAtMs, options, async (dump) => {
       if (
         rejectedDumpPaths.has(dump.filePath) ||
         claimedDumpPaths.has(dump.filePath) ||
@@ -294,39 +292,9 @@ export async function captureMinidumpSignature(
       }
       reservedDumpPaths.add(dump.filePath)
       try {
-        // Reject symlink swaps where the platform exposes O_NOFOLLOW; the regular-file
-        // check below covers descriptors opened on every platform.
-        const noFollow = fsConstants.O_NOFOLLOW ?? 0
-        const handle = await open(
-          dump.filePath,
-          noFollow === 0 ? 'r' : fsConstants.O_RDONLY | noFollow
-        ).catch(() => {
-          rejectedDumpPaths.add(dump.filePath)
-          return null
+        const signature = parseMinidumpCrashSignature(await readFile(dump.filePath), {
+          expectedProcessType: options.expectedProcessType
         })
-        if (handle === null) {
-          return null
-        }
-        let signature: MinidumpCrashSignature | null
-        let sizeBytes: number
-        try {
-          const stats = await handle.stat()
-          if (!stats.isFile()) {
-            rejectedDumpPaths.add(dump.filePath)
-            return null
-          }
-          sizeBytes = await observeMinidumpExtent(handle, stats.size, {
-            deadlineMs,
-            now: options.now
-          })
-          const source = createMinidumpFileSource(handle, sizeBytes)
-          signature = await parseMinidumpCrashSignature(source, {
-            expectedProcessType: options.expectedProcessType
-          })
-          sizeBytes = source.byteLength
-        } finally {
-          await handle.close()
-        }
         if (
           !signature ||
           (options.expectedProcessType !== undefined &&
@@ -336,7 +304,7 @@ export async function captureMinidumpSignature(
           return null
         }
         claimedDumpPaths.set(dump.filePath, dump.mtimeMs)
-        return { filePath: dump.filePath, sizeBytes, signature }
+        return { filePath: dump.filePath, sizeBytes: dump.size, signature }
       } finally {
         reservedDumpPaths.delete(dump.filePath)
       }

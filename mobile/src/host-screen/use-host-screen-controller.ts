@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useLocalSearchParams, usePathname } from 'expo-router'
-import { useRouteHandoff } from '../navigation/route-handoff'
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useHostProtocolGates } from '../components/HostProtocolGate'
 import { visibleHostRouteNotice } from '../host-route-notice'
@@ -45,10 +44,7 @@ export function useHostScreenController({
   const [dismissedNotice, setDismissedNotice] = useState<string | null>(null)
   const noticeParam = params.notice?.trim()
   const routeNotice = visibleHostRouteNotice(embedded, noticeParam, dismissedNotice)
-  // Not `useRouter` directly: the list is the one screen that also runs inside the shell's page,
-  // where a route it does not render is handed back to the app rather than pushed into this
-  // document. On a phone this is the router and nothing else.
-  const router = useRouteHandoff()
+  const router = useRouter()
   const pathname = usePathname()
   const insets = useSafeAreaInsets()
   // Why: cap and center the list on wide/tablet canvases; on phones isWideLayout is false so it stays edge-to-edge.

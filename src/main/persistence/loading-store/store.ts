@@ -15,6 +15,8 @@ import {
   type StoreDomains
 } from './store-domain-composition'
 import type { PersistedState } from '../../../shared/persisted-state-types'
+import { normalizeLocalProviderRecords } from '../../../shared/local-provider-normalization'
+import type { LocalProviderRecord } from '../../../shared/local-provider-types'
 import { scheduleSave } from './write-scheduling'
 import type { WriteSchedulingOperations } from './write-scheduling'
 import type { PrimaryStateWriteOperations } from './primary-state-writes'
@@ -93,6 +95,19 @@ export class Store {
 
   getProfileStorageDirectory(): string {
     return dirname(this.runtime.dataFile)
+  }
+
+  getLocalProviders(): LocalProviderRecord[] {
+    return (this.state.localProviders ?? []).map((provider) => ({
+      ...provider,
+      args: [...provider.args],
+      env: { ...provider.env }
+    }))
+  }
+
+  replaceLocalProviders(providers: LocalProviderRecord[]): void {
+    this.state.localProviders = normalizeLocalProviderRecords(providers)
+    scheduleSave(this.domains.scheduling)
   }
 
   freezeWrites(): void {

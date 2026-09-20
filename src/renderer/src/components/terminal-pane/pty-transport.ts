@@ -126,7 +126,6 @@ export function createIpcPtyTransport(opts: IpcPtyTransportOptions = {}): PtyTra
   }
 
   return {
-    getPendingEscapeTailAnsi: outputProcessor.getPendingEscapeTailAnsi,
     connect: async (options) => {
       const connectGeneration = advancePtyLifecycle()
       try {

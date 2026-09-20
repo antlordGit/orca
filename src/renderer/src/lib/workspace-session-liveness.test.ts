@@ -12,7 +12,6 @@ function createSnapshot(
     tabsByWorktree: {},
     ptyIdsByTabId: {},
     terminalLayoutsByTabId: {},
-    localOnlyScrollbackByTabId: {},
     activeTabIdByWorktree: {},
     openFiles: [],
     editorDrafts: {},

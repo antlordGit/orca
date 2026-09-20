@@ -168,7 +168,7 @@ export function useMobileHomeData() {
   const primaryTaskProviders = primaryHost
     ? (taskProvidersByHost[primaryHost.id] ?? ['github'])
     : []
-  const hostConnections = useMemo(
+  const hostConnectionProjection = useMemo(
     () => projectHomeHostConnections(connections.allClients),
     [connections.allClients]
   )
@@ -178,7 +178,10 @@ export function useMobileHomeData() {
     accountsHosts,
     connectedHosts,
     hostCatalog,
-    hostConnections,
+    hostPairingRejected: hostConnectionProjection.hostPairingRejected,
+    hostSignedOut: hostConnectionProjection.hostSignedOut,
+    hostPaths: hostConnectionProjection.hostPaths,
+    hostPendingPaths: hostConnectionProjection.hostPendingPaths,
     primaryHost,
     primaryTaskProviders,
     resumeCard,

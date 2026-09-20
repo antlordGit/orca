@@ -8,7 +8,6 @@ import {
 } from './runtime-file-commands-mobile-file-list-limit'
 import { isBinaryBuffer, isMobileBinaryPath } from './runtime-file-command-host'
 import {
-  assertTerminalArtifactContentUnchanged,
   assertTerminalFileGrantFresh,
   readFileHandleBufferBounded,
   terminalFileStatIdentity
@@ -76,9 +75,9 @@ export class RuntimeFileCommandsWithWriteTerminalArtifactFile extends RuntimeFil
         throw new Error('file_too_large')
       }
       assertTerminalFileGrantFresh(grant, fileStats)
-      const buffer = await readFileHandleBufferBounded(handle, MOBILE_FILE_READ_MAX_BYTES + 1)
-      assertTerminalArtifactContentUnchanged(grant, buffer)
-      if (isBinaryBuffer(buffer)) {
+      if (
+        isBinaryBuffer(await readFileHandleBufferBounded(handle, MOBILE_FILE_READ_MAX_BYTES + 1))
+      ) {
         throw new Error('binary_file')
       }
     } finally {
@@ -96,17 +95,13 @@ export class RuntimeFileCommandsWithWriteTerminalArtifactFile extends RuntimeFil
       const freshHandle = await openLocalTerminalArtifactGrant(grant, constants.O_RDONLY)
       try {
         assertTerminalFileGrantFresh(grant, await freshHandle.stat())
-        assertTerminalArtifactContentUnchanged(
-          grant,
-          await readFileHandleBufferBounded(freshHandle, MOBILE_FILE_READ_MAX_BYTES + 1)
-        )
       } finally {
         await freshHandle.close()
       }
       await rename(tempPath, grant.absolutePath)
-      const committed = await this.statLocalTerminalArtifact(grant.absolutePath)
-      grant.statIdentity = terminalFileStatIdentity(committed.stats)
-      grant.contentDigest = committed.contentDigest
+      grant.statIdentity = terminalFileStatIdentity(
+        await this.statLocalTerminalPath(grant.absolutePath)
+      )
       this.refreshTerminalFileGrant(grant)
       return { ok: true }
     } finally {

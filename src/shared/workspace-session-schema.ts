@@ -213,12 +213,6 @@ export const workspaceSessionStateSchema: z.ZodType<WorkspaceSessionState> = z.o
     salvagingRecord(terminalTabIdSchema, terminalLayoutSnapshotSchema),
     () => ({})
   ),
-  // Client-local park scrollback; see WorkspaceSessionState.localOnlyScrollbackByTabId for why it is
-  // not a field on the layout snapshot. Optional so an older profile simply carries none.
-  localOnlyScrollbackByTabId: salvagedOptional(
-    'localOnlyScrollbackByTabId',
-    salvagingRecord(terminalTabIdSchema, leafStringsSchema)
-  ),
   activeWorktreeIdsOnShutdown: salvagedOptional(
     'activeWorktreeIdsOnShutdown',
     salvagingArray(worktreeIdSchema)

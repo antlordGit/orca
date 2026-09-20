@@ -1,4 +1,3 @@
-import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
@@ -113,7 +112,7 @@ function appendTocItem(stack: MarkdownTocItem[], item: MarkdownTocItem): void {
 }
 
 type MarkdownAstNode = {
-  alt?: string | null
+  alt?: string
   children?: MarkdownAstNode[]
   depth?: number
   type?: string
@@ -143,9 +142,8 @@ export function buildMarkdownTableOfContents(markdown: string): MarkdownTocItem[
   const tree = unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkCjkFriendly)
     .use(remarkFrontmatter, ['yaml', 'toml'])
-    .parse(markdown)
+    .parse(markdown) as MarkdownAstNode
 
   function visit(node: MarkdownAstNode): void {
     if (

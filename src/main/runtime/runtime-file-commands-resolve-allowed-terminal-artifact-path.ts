@@ -8,7 +8,6 @@ import {
   assertTerminalArtifactNotHardLinked,
   canonicalPathForArtifactComparison,
   isTerminalArtifactHardLinked,
-  localTerminalArtifactContentDigest,
   terminalFileStatIdentity
 } from './runtime-file-commands-terminal-artifact-access'
 import {
@@ -64,15 +63,9 @@ export class RuntimeFileCommandsWithResolveAllowedTerminalArtifactPath extends R
     readOnly?: boolean
     provenance?: TerminalFileGrant['provenance']
   }): Promise<RuntimeTerminalPathResolution> {
-    let contentDigest: string | null = null
-    let stats: RuntimeFileStatLike & { isDirectory: () => boolean }
-    if (args.connectionId) {
-      stats = await this.statRemoteTerminalPath(args.artifactPath, args.connectionId)
-    } else {
-      const local = await this.statLocalTerminalArtifact(args.artifactPath)
-      stats = local.stats
-      contentDigest = local.contentDigest
-    }
+    const stats = args.connectionId
+      ? await this.statRemoteTerminalPath(args.artifactPath, args.connectionId)
+      : await this.statLocalTerminalPath(args.artifactPath)
     const isDirectory = stats.isDirectory()
     if (!isDirectory && isTerminalArtifactHardLinked(stats)) {
       return {
@@ -93,8 +86,7 @@ export class RuntimeFileCommandsWithResolveAllowedTerminalArtifactPath extends R
           clientId: args.clientId,
           readOnly: args.readOnly === true,
           provenance: args.provenance ?? 'terminal-output',
-          stats,
-          contentDigest
+          stats
         })
     return {
       worktree: args.worktreeId,
@@ -143,22 +135,10 @@ export class RuntimeFileCommandsWithResolveAllowedTerminalArtifactPath extends R
   protected async statLocalTerminalPath(
     absolutePath: string
   ): Promise<RuntimeFileStatLike & { isDirectory: () => boolean }> {
-    return (await this.statLocalTerminalArtifact(absolutePath)).stats
-  }
-
-  /** Stat and content digest taken from one handle, so nothing can swap the file between them. */
-  protected async statLocalTerminalArtifact(absolutePath: string): Promise<{
-    stats: RuntimeFileStatLike & { isDirectory: () => boolean }
-    contentDigest: string | null
-  }> {
     await assertLocalTerminalArtifactPathStillCanonical(absolutePath)
     const handle = await open(absolutePath, 'r')
     try {
-      const stats = await handle.stat()
-      const contentDigest = stats.isDirectory()
-        ? null
-        : await localTerminalArtifactContentDigest(handle, stats.size)
-      return { stats, contentDigest }
+      return handle.stat()
     } finally {
       await handle.close()
     }
@@ -173,7 +153,6 @@ export class RuntimeFileCommandsWithResolveAllowedTerminalArtifactPath extends R
     readOnly?: boolean
     provenance: TerminalFileGrant['provenance']
     stats: RuntimeFileStatLike
-    contentDigest?: string | null
   }): TerminalFileGrant {
     assertTerminalArtifactNotHardLinked(args.stats)
     const grant: TerminalFileGrant = {
@@ -185,7 +164,6 @@ export class RuntimeFileCommandsWithResolveAllowedTerminalArtifactPath extends R
       ...(args.clientId ? { clientId: args.clientId } : {}),
       expiresAt: Date.now() + TERMINAL_FILE_GRANT_TTL_MS,
       statIdentity: terminalFileStatIdentity(args.stats),
-      contentDigest: args.contentDigest ?? null,
       readOnly: args.readOnly === true,
       provenance: args.provenance
     }

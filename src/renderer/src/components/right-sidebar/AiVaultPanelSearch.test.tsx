@@ -26,8 +26,7 @@ function panelSearch(overrides: Partial<PanelSearch> = {}): PanelSearch {
     sessions: [],
     searchHits: new Map(),
     searching: true,
-    hasQuery: true,
-    needsLocalConsent: false,
+    localConsent: false,
     host: null,
     resetKey: 'all',
     ...overrides
@@ -36,7 +35,7 @@ function panelSearch(overrides: Partial<PanelSearch> = {}): PanelSearch {
 
 function renderPanel(search: PanelSearch) {
   return render(
-    <AiVaultPanelSearch search={search} noAgents={false}>
+    <AiVaultPanelSearch search={search} noAgents={false} onDismiss={vi.fn()}>
       <div>results</div>
     </AiVaultPanelSearch>
   )

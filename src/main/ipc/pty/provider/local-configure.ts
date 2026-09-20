@@ -20,11 +20,14 @@ import type { GetSelectedCodexHomePath } from '../host-env/types'
 import { isCurrentPtyExit, ptyOwnership } from './ownership-state'
 import { localProvider } from './registry'
 import { clearProviderPtyState } from './state-cleanup'
+import type { LocalProviderStore } from '../../../local-providers/service'
+import { buildEnabledLocalProviderEnvironment } from '../../../local-providers/local-provider-session-environment'
 
 export function configureLocalPtyProvider(args: {
   runtime?: OrcaRuntimeService
   getSettings?: () => GlobalSettings
   getSelectedCodexHomePath?: GetSelectedCodexHomePath
+  store?: LocalProviderStore
   trustedTerminalHandleEnv: Set<string>
 }): void {
   // Why: only LocalPtyProvider needs main-process hook injection; daemon-backed providers spawn subprocesses internally.
@@ -77,26 +80,39 @@ export function configureLocalPtyProvider(args: {
         routeBrowserOpensToClient: runtime?.shouldRelayTerminalBrowserOpens?.()
       })
       // Why: agents need their terminal handle at process start to self-identify in orchestration messages without an extra RPC.
-      const requestedHandle = baseEnv.ORCA_TERMINAL_HANDLE
+      const providerEnv = buildEnabledLocalProviderEnvironment({
+        store: args.store,
+        launchAgent: ctx?.launchAgent,
+        command: ctx?.command,
+        baseEnv: env,
+        configDirs: ptySettings
+          ? {
+              claudeConfigDir: ptySettings.claudeConfigDir ?? null,
+              codexConfigDir: ptySettings.codexConfigDir ?? null
+            }
+          : undefined
+      })
+      const finalEnv = providerEnv
+      const requestedHandle = finalEnv.ORCA_TERMINAL_HANDLE
       const preAllocatedHandle =
         requestedHandle && trustedTerminalHandleEnv.has(requestedHandle)
           ? requestedHandle
           : runtime?.preAllocateHandleForPty(id)
       if (requestedHandle && requestedHandle !== preAllocatedHandle) {
-        delete env.ORCA_TERMINAL_HANDLE
+        delete finalEnv.ORCA_TERMINAL_HANDLE
       }
       if (preAllocatedHandle) {
-        env.ORCA_TERMINAL_HANDLE = preAllocatedHandle
+        finalEnv.ORCA_TERMINAL_HANDLE = preAllocatedHandle
       }
       stampWslOrchestrationCompatibilityHost(
-        env,
+        finalEnv,
         runtime?.getOrchestrationCompatibilityHostId?.(),
         ctx?.isWsl === true ? ctx.wslDistro : null
       )
       if (ctx?.isWsl === true) {
-        addOrcaWslInteropEnv(env)
+        addOrcaWslInteropEnv(finalEnv)
       }
-      return env
+      return finalEnv
     },
     onSpawned: (id, incarnationId) => runtime?.onPtySpawned(id, incarnationId),
     onExit: (id, code, incarnationId, cause) => {

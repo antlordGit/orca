@@ -4,7 +4,6 @@ import { MobileE2EEAuthenticationError } from './mobile-e2ee-v2-physical-channel
 import { RelayOuterError } from './mobile-relay-e2ee-link'
 import { RelayReconnectController } from './mobile-relay-reconnect-controller'
 import { RelayDirectorHttpError } from './mobile-relay-resume-director'
-import { relayFailureAllowsGraceRetry } from './relay-credential-eligibility'
 import type { StableLogicalRpcClient } from './stable-logical-rpc-client'
 
 vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }))
@@ -374,10 +373,14 @@ describe('relay reconnect controller', () => {
   })
 
   it('uses grace only when the outer relay credential was rejected', () => {
-    expect(relayFailureAllowsGraceRetry(new RelayOuterError(4401))).toBe(true)
-    expect(relayFailureAllowsGraceRetry(new Error('relay transport error'))).toBe(false)
-    expect(relayFailureAllowsGraceRetry(new RelayOuterError(4408))).toBe(false)
-    expect(relayFailureAllowsGraceRetry(new RelayOuterError(4429))).toBe(false)
+    const reconnect = createController(vi.fn())
+
+    expect(reconnect.shouldTryGraceAfterRelayFailure(new RelayOuterError(4401))).toBe(true)
+    expect(reconnect.shouldTryGraceAfterRelayFailure(new Error('relay transport error'))).toBe(
+      false
+    )
+    expect(reconnect.shouldTryGraceAfterRelayFailure(new RelayOuterError(4408))).toBe(false)
+    expect(reconnect.shouldTryGraceAfterRelayFailure(new RelayOuterError(4429))).toBe(false)
   })
 })
 
@@ -397,8 +400,7 @@ function createController(
   )
   controller.reportRecoveryTo({
     setRecoveryAttempt: reportFailureCount,
-    setPairingRejected: reportPairingRejected,
-    setRelayHostReachability: () => {}
-  })
+    setPairingRejected: reportPairingRejected
+  } as unknown as StableLogicalRpcClient)
   return controller
 }

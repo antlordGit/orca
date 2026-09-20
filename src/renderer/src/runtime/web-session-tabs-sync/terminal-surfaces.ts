@@ -6,7 +6,6 @@ import type { TerminalLayoutSnapshot, TerminalTab } from '../../../../shared/ter
 import { defaultAgentChatLabel } from '../../../../shared/agent-session-chat-label'
 import { sanitizeTerminalLayoutPaneTitlesForLabels } from '@/lib/terminal-pane-title-sanitization'
 import { resolveTerminalLayoutRoot } from '../remote-terminal-layout-resolution'
-import { retainLocalScrollbackInRemoteLayout } from '@/components/terminal-pane/remote-layout-scrollback-retention'
 import { getRemoteRuntimePtyEnvironmentId } from '../runtime-terminal-stream'
 import {
   HOST_TERMINAL_SURFACE_SEPARATOR,
@@ -201,13 +200,7 @@ export function chooseRemoteTerminalLayout(
       : parentLayout?.expandedLeafId && knownLeafIds.has(parentLayout.expandedLeafId)
         ? parentLayout.expandedLeafId
         : null
-  // Why retained: this rebuilds the layout from the host's picture, and the host publishes no
-  // scrollback of its own — a parked remote pane's bytes live only in the client's copy. Without
-  // this, ANY inventory frame landing between park and reveal drops the only copy: the rebuild is
-  // bufferless, terminalLayoutEqual compares buffers so the write is not bailed out, and
-  // apply-terminal-records assigns it wholesale. Structure still comes from the host; only bytes
-  // for leaves the host itself names are carried over.
-  return retainLocalScrollbackInRemoteLayout(existingLayout, {
+  return {
     // Why: host parentLayout is authoritative for split direction; else keep the prior client tree — a leaf-set mismatch prunes/grafts it, never re-guesses the directions it already carries.
     root: resolveTerminalLayoutRoot({
       authoritativeRoot: parentLayout?.root,
@@ -223,7 +216,7 @@ export function chooseRemoteTerminalLayout(
     ptyIdsByLeafId,
     // Why: surface.title is the tab/PTY label, not a pane title; restoring it as one renders a fake title bar. Only host layout titles are real pane titles.
     ...(parentLayout?.titlesByLeafId ? { titlesByLeafId: parentLayout.titlesByLeafId } : {})
-  })
+  }
 }
 
 export function shouldReplaceTerminalTab(

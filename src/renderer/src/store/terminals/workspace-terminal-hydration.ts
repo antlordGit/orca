@@ -213,12 +213,7 @@ export function createWorkspaceTerminalHydrationActions(
             session,
             tabById,
             validTabIds
-          }),
-          localOnlyScrollbackByTabId: Object.fromEntries(
-            Object.entries(session.localOnlyScrollbackByTabId ?? {}).filter(([tabId]) =>
-              validTabIds.has(tabId)
-            )
-          )
+          })
         }
         return options?.replaceWorkspaceKeys
           ? targetScopedWorkspaceHydrationPatch(s, hydrated, session, options)

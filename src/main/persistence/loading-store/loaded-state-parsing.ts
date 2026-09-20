@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import { normalizeProxyUrl } from '../../../shared/network-proxy'
 import { normalizeKagiSessionLink } from '../../../shared/browser-url'
 import type { PersistedState } from '../../../shared/persisted-state-types'
+import { normalizeLocalProviderRecords } from '../../../shared/local-provider-normalization'
 import type { SshPtyConsumerRecovery } from '../../../shared/ssh-types'
 import { getDefaultPersistedState } from '../../../shared/constants'
 import { pruneLocalTerminalScrollbackBuffers } from '../../../shared/workspace-session-terminal-buffers'
@@ -15,6 +16,7 @@ import {
 } from '../../startup/startup-diagnostics'
 import {
   PROTECTED_SECRET_SLOT,
+  localProviderSecretSlot,
   sshPtyOwnerLeaseSecretSlot
 } from '../../protected-secret-persistence'
 import {
@@ -164,6 +166,24 @@ export class LoadedStateParsingOperations {
             return normalized
           })
           .filter((record): record is SshPtyConsumerRecovery => record !== null)
+
+        parsed.localProviders = normalizeLocalProviderRecords(parsed.localProviders).map(
+          (provider) => {
+            const slot = localProviderSecretSlot(provider.id)
+            const decrypted = this.runtime.protectedSecrets.decryptWithStatus(
+              slot,
+              provider.secret ?? ''
+            )
+            return {
+              ...provider,
+              secret:
+                decrypted.status === 'unavailable' ||
+                (decrypted.status === 'failed' && !decrypted.plaintext)
+                  ? null
+                  : decrypted.plaintext || null
+            }
+          }
+        )
 
         const terminalSettings = prepareLoadedTerminalSettings(parsed, () => {
           this.runtime.loadNeedsSave = true

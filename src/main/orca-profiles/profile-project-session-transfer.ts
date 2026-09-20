@@ -115,13 +115,6 @@ export function extractSessionForTransfer(
       transferred.terminalLayoutsByTabId[tabId] = structuredClone(layout)
     }
   }
-  if (source.localOnlyScrollbackByTabId) {
-    transferred.localOnlyScrollbackByTabId = Object.fromEntries(
-      Object.entries(source.localOnlyScrollbackByTabId)
-        .filter(([tabId]) => copiedTerminalTabIds.has(tabId))
-        .map(([tabId, buffers]) => [tabId, structuredClone(buffers)])
-    )
-  }
   transferred.terminalPtyIncarnationsByPaneKey = Object.fromEntries(
     Object.entries(source.terminalPtyIncarnationsByPaneKey ?? {}).filter(([paneKey]) => {
       const separator = paneKey.lastIndexOf(':')

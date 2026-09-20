@@ -3,7 +3,6 @@ import { useAppStore } from '@/store'
 import { applyExpandedLayoutTo } from './expand-collapse'
 import { replayTerminalLayout, restoreScrollbackBuffers } from './layout-serialization'
 import { canReleaseReplayedScrollbackFromStore } from './replayed-scrollback-store-release'
-import { resolveLeafScrollbackBuffers } from './leaf-scrollback-resolution'
 import type { TerminalPaneLifecycleRefs } from './use-terminal-pane-lifecycle-refs'
 import type { UseTerminalPaneLifecycleDeps } from './terminal-pane-lifecycle-types'
 import type { PtyConnectionDeps } from './pty-connection-types'
@@ -24,11 +23,7 @@ export function restoreTerminalPaneLayout(args: {
   const restoredPaneByLeafId = replayLayoutWithOneShotParkIntent(ptyDeps, () =>
     replayTerminalLayout(manager, initialLayoutRef.current, isActive)
   )
-  const localOnlyBuffers = useAppStore.getState().localOnlyScrollbackByTabId[tabId]
-  const restoredBuffers = resolveLeafScrollbackBuffers({
-    shared: initialLayoutRef.current,
-    localOnly: localOnlyBuffers
-  })
+  const restoredBuffers = initialLayoutRef.current.buffersByLeafId
   restoreScrollbackBuffers(
     manager,
     restoredBuffers,
@@ -52,10 +47,6 @@ export function restoreTerminalPaneLayout(args: {
     }
     if (initialLayoutHadBuffers) {
       useAppStore.getState().setTabLayout(tabId, layoutWithoutRestoredBuffers)
-    }
-    // Same release for the local-only home: xterm owns the bytes now and the next park re-captures.
-    if (localOnlyBuffers) {
-      useAppStore.getState().setTabLocalOnlyScrollback(tabId, null)
     }
   }
   const restoredTitles = mapRestoredPaneTitlesByPaneId(

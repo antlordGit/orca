@@ -52,39 +52,14 @@ export const BRIDGE_MAX_ROUTE_PARAM_CHARS = 1024
  * One segment of a route path, and the only place the rule is written.
  *
  * Exported as source rather than as a regex because it is embedded in more than one pattern: the
- * `init` pathname and the hrefs a page hands back to the shell are the same vocabulary, and two
- * spellings of it would be two rules that drift.
- *
- * Which is why the dot-segment lookahead ends a segment at `?` as well as at `/` and at the end of
- * the string. A pathname carries no query, but an href does, so `/h/..?x` reaches the shared rule.
- * The harm there is not the climb `replaceState` performs on the pathname: the href's sink is the
- * native router, which resolves a dot segment only for an href beginning with `.` and otherwise
- * matches segments literally, so `..` is taken as a value for `[hostId]` and the shell opens a host
- * screen for an id no host has. Different screen, same reason to refuse it.
- *
- * Widening the boundary cannot loosen the pathname pattern, where a `?` fails the character class
- * wherever it appears.
+ * `init` pathname below and the hrefs a page hands back to the shell are the same vocabulary, and
+ * two spellings of it would be two rules that drift.
  */
-export const BRIDGE_ROUTE_SEGMENT_SOURCE = String.raw`(?!(?:\.|%2[eE]){1,2}(?:[/?]|$))[^/\\?#\s]+`
+export const BRIDGE_ROUTE_SEGMENT_SOURCE = String.raw`(?!(?:\.|%2[eE]){1,2}(?:/|$))[^/\\?#\s]+`
 
-/** The path half both patterns start from: rooted, and made of segments that name something. */
-const ROUTE_PATH_SOURCE = `/(?:${BRIDGE_ROUTE_SEGMENT_SOURCE}(?:/${BRIDGE_ROUTE_SEGMENT_SOURCE})*/?)?`
-
-export const BRIDGE_ROUTE_PATHNAME_PATTERN = new RegExp(`^${ROUTE_PATH_SOURCE}$`)
-
-/** A `navigate` target: the same path, plus the query the screen is opened with. Still no
- *  fragment — the shell matches on a pathname, and a `#` is the page's own business.
- *
- *  Shape only. Whether the target names a screen the app actually has is a different question and
- *  a later one: with no `+not-found` file, expo-router's Unmatched paints over the shell for a
- *  well-formed path nobody routes. C1.7 owns that check. */
-export const BRIDGE_ROUTE_HREF_PATTERN = new RegExp(
-  String.raw`^${ROUTE_PATH_SOURCE}(?:\?[^#\s]*)?$`
+export const BRIDGE_ROUTE_PATHNAME_PATTERN = new RegExp(
+  `^/(?:${BRIDGE_ROUTE_SEGMENT_SOURCE}(?:/${BRIDGE_ROUTE_SEGMENT_SOURCE})*/?)?$`
 )
-export const BRIDGE_MAX_ROUTE_HREF_CHARS = 2048
-export const BRIDGE_MAX_PAGE_ROUTES = 64
-/** A host id, its name and its endpoint. Bounded because the page renders all three. */
-export const BRIDGE_MAX_HOST_FIELD_CHARS = 1024
 
 /**
  * In-flight bounds. The RN host is authoritative for both; the page holds the same numbers only to

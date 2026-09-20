@@ -10,6 +10,10 @@ export function sshPtyOwnerLeaseSecretSlot(targetId: string): string {
   return `sshPtyConsumerRecoveries.ownerLease:${targetId}`
 }
 
+export function localProviderSecretSlot(providerId: string): string {
+  return `localProviders.secret:${providerId}`
+}
+
 export type ProtectedSecretDecryption = {
   plaintext: string
   status: 'decrypted' | 'failed' | 'unavailable'

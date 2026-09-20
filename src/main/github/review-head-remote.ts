@@ -1,5 +1,4 @@
 import type { IssueSourcePreference } from '../../shared/repo-types'
-import type { GhAccountBinding } from '../../shared/github/account-binding'
 import { pickPreferredGitRemote } from '../../shared/preferred-git-remote'
 import { getDefaultRemote } from '../git/repo'
 import { getGitHubApiRepositoryForRemote } from './github-api-repository'
@@ -12,7 +11,7 @@ export async function resolveGitHubReviewHeadRemote(args: {
   repoPath: string
   issueSourcePreference?: IssueSourcePreference
   connectionId?: string | null
-  localGitOptions?: { wslDistro?: string; ghAccount?: GhAccountBinding }
+  localGitOptions?: { wslDistro?: string }
   gitExec: GitExec
 }): Promise<string> {
   const { stdout } = await args.gitExec(['remote'])

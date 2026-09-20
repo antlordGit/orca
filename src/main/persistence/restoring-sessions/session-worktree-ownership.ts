@@ -27,7 +27,6 @@ export const WORKSPACE_SESSION_WORKTREE_REFERENCE_KIND = {
   activeTabId: 'none',
   tabsByWorktree: 'owner-keyed-row-arrays',
   terminalLayoutsByTabId: 'none',
-  localOnlyScrollbackByTabId: 'none',
   activeWorktreeIdsOnShutdown: 'worktree-id-array',
   openFilesByWorktree: 'owner-keyed-row-arrays',
   activeFileIdByWorktree: 'owner-keyed',

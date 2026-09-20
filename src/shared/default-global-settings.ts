@@ -229,6 +229,9 @@ export function buildDefaultSettings(args: {
     mobileEmulatorEnabled: true,
     mobileEmulatorDefaultDeviceUdid: null,
     androidSdkPath: null,
+    // Why: null means the CLI's own default home (~/.claude / ~/.codex); an explicit dir pins that CLI's config root.
+    claudeConfigDir: null,
+    codexConfigDir: null,
     // Why: indefinite hold — the "Restore" banner is the explicit return action, no wall-clock guess. See docs/mobile-fit-hold.md.
     mobileAutoRestoreFitMs: null,
     // Why: Anywhere (Relay + local) is the default; local-only is written only on explicit same-network choice.

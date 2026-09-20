@@ -4,7 +4,7 @@ import { isFolderRepo } from '../../../../shared/repo-kind'
 import { gitExecFileAsync } from '../../../git/runner'
 import {
   getLocalProjectGitExecOptions,
-  getLocalProjectGhExecOptions
+  getLocalProjectWorktreeGitOptions
 } from '../../../project-runtime-git-options'
 import { getSshGitProvider } from '../../../providers/ssh-git-dispatch'
 import {
@@ -49,11 +49,6 @@ export function registerReviewBaseHandlers(context: WorktreeIpcContext): void {
         }
         return provider.exec(args, repo.path)
       }
-      const localGhOptions = repo.connectionId
-        ? repo.ghAccount
-          ? { ghAccount: repo.ghAccount }
-          : undefined
-        : getLocalProjectGhExecOptions(store, repo)
       // Why: SSH review-head fetches require narrow write-capable RPCs.
       const fetchRemoteTrackingRef = (remote: string, branch: string): Promise<void> =>
         fetchPrHeadTrackingRef(
@@ -80,7 +75,7 @@ export function registerReviewBaseHandlers(context: WorktreeIpcContext): void {
         isCrossRepository: args.isCrossRepository,
         issueSourcePreference: repo.issueSourcePreference,
         connectionId: repo.connectionId ?? null,
-        localGitOptions: localGhOptions,
+        localGitOptions: getLocalProjectWorktreeGitOptions(store, repo),
         gitExec,
         fetchRemoteTrackingRef,
         fetchPullRequestHeadRef,
@@ -91,7 +86,7 @@ export function registerReviewBaseHandlers(context: WorktreeIpcContext): void {
             repoPath: repo.path,
             issueSourcePreference: repo.issueSourcePreference,
             connectionId: repo.connectionId ?? null,
-            localGitOptions: localGhOptions,
+            localGitOptions: getLocalProjectWorktreeGitOptions(store, repo),
             gitExec
           })
       })

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { requestAgentTerminalRename } from '../terminal-pane/agent-terminal-rename'
 import {
   RENAME_TERMINAL_TAB_EVENT,
   type RenameTerminalTabDetail
@@ -37,9 +38,13 @@ export function useSortableTabRename({
     }
     committedOrCancelledRef.current = true
     const trimmed = renameValue.trim()
-    onSetCustomTitle(tabId, trimmed.length > 0 ? trimmed : null)
+    const nextTitle = trimmed.length > 0 ? trimmed : null
+    onSetCustomTitle(tabId, nextTitle)
+    if (nextTitle !== null && nextTitle !== (customTitle ?? title)) {
+      requestAgentTerminalRename(tabId, nextTitle)
+    }
     setIsEditing(false)
-  }, [renameValue, onSetCustomTitle, tabId])
+  }, [customTitle, renameValue, onSetCustomTitle, tabId, title])
 
   const cancelRename = useCallback(() => {
     committedOrCancelledRef.current = true

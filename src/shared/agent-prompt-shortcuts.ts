@@ -45,6 +45,7 @@ function normalizeAgentPromptShortcutList(input: unknown): AgentPromptShortcut[]
     if (!name || !content.trim()) {
       continue
     }
+
     const nameKey = name.toLocaleLowerCase()
     if (!nameKey || seenNames.has(nameKey)) {
       continue

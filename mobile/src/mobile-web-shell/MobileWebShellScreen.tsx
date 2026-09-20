@@ -1,6 +1,5 @@
-import { useEffect, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   OrcaMobileWebShellView,
@@ -15,9 +14,7 @@ import type {
 } from './mobile-web-shell-session-contract'
 import { useMobileWebShellBridge } from './use-mobile-web-shell-bridge'
 import type { MobileWebShellRuntime } from './mobile-web-shell-runtime'
-import { useShellStackPop } from './use-shell-stack-pop'
 import { useMobileWebShellSession } from './use-mobile-web-shell-session'
-import { usePageHostSnapshot } from './use-page-host-snapshot'
 
 // Same guard as the Troubleshoot developer row: `__DEV__` is undefined outside the React Native
 // runtime, and the facts below are for whoever is bringing the shell up, not for a user.
@@ -115,12 +112,6 @@ export type MobileWebShellScreenProps = {
   hostId: string
   /** The screen this shell stands in for, which the page cannot derive from a document served at `/`. */
   route: BridgeInitRoute
-  /**
-   * What to render when the bundle does not list this route, or lists it needing a grant this app
-   * does not implement. Required, because every caller has a native screen behind it: that is what
-   * the negotiation falls back to, and a shell with nothing behind it would paint a blank instead.
-   */
-  fallback: ReactNode
   runtime?: MobileWebShellRuntime
 }
 
@@ -131,27 +122,14 @@ export type MobileWebShellScreenProps = {
  * The native view is keyed on the session id, so a remount the reducer asks for is a new key and a
  * rebuilt WebView with every fence reinstalled — the view has no reload of its own by design.
  */
-export function MobileWebShellScreen({
-  hostId,
-  route,
-  fallback,
-  runtime
-}: MobileWebShellScreenProps) {
+export function MobileWebShellScreen({ hostId, route, runtime }: MobileWebShellScreenProps) {
   const insets = useSafeAreaInsets()
-  const router = useRouter()
-  const popShellStack = useShellStackPop()
-  const { state, pageRoutes, retry, reportShellFailure, reportDocumentLoaded, reportPageReady } =
-    useMobileWebShellSession({ hostId, routePathname: route.pathname, runtime })
-  const { snapshot, unreadable, readStorage, refreshStorage, writeStorage } =
-    usePageHostSnapshot(hostId)
+  const { state, retry, reportShellFailure, reportDocumentLoaded, reportPageReady } =
+    useMobileWebShellSession({ hostId, runtime })
   const bridge = useMobileWebShellBridge({
     hostId,
     route,
-    pageRoutes,
     session: state,
-    snapshot,
-    readStorage,
-    onStorageWrite: writeStorage,
     // Reported as the document failing to load, which is what it is: the document loaded and never
     // produced a tree. That reason drops this generation and downloads once, so a page broken by
     // bytes this host has since replaced recovers, and a page broken by its own code stops at the
@@ -162,46 +140,16 @@ export function MobileWebShellScreen({
       console.warn('[web-shell] the page faulted', error)
       reportShellFailure('document-load-failed')
     },
-    // The `init` this ready is answered with is already built from the app's writes, which reach
-    // the map as they are made. This re-seats that map on the store afterwards, for the key whose
-    // write never persisted, and it runs on every ask because a document that reloads inside this
-    // mount asks again.
-    onPageReady: () => {
-      reportPageReady()
-      void refreshStorage()
-    },
+    onPageReady: reportPageReady,
     // `document-load-failed` because that is what happens: the document loads and the page refuses
     // the session, so no tree is ever built. The refetch it costs is wasted on a route this shell
     // produced, and the second report is terminal, which is the failure screen this deserves.
     onRouteRefused: (issue) => {
       console.warn('[web-shell] refused to open this screen', issue)
       reportShellFailure('document-load-failed')
-    },
-    // Pushed, never replaced: the page stays mounted underneath, so Back reveals it with no
-    // download and no second `init`.
-    onNavigate: (href: string) => {
-      router.push(href)
-    },
-    // The page's own Back goes nowhere: it holds the one history entry the entry wrote, so the only
-    // stack to pop is this one.
-    onNavigateBack: popShellStack
+    }
   })
 
-  // A profile read that rejected never becomes a host, so the session would otherwise sit in
-  // `ready` behind an un-hidden view with nothing serving it and the page asking forever.
-  // `document-load-failed` because that is the outcome: the document loads and no session opens.
-  // The refetch it costs is wasted on a device-local read, and the second report is terminal, which
-  // is the failure screen with a Try again this deserves.
-  useEffect(() => {
-    if (unreadable) {
-      console.warn('[web-shell] this host could not be read from the app store')
-      reportShellFailure('document-load-failed')
-    }
-  }, [reportShellFailure, unreadable])
-
-  if (state.kind === 'native-route') {
-    return fallback
-  }
   if (state.kind === 'wall') {
     return <ProtocolBlockScreen verdict={state.verdict} />
   }

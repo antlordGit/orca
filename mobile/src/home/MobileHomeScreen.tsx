@@ -142,7 +142,10 @@ export function MobileHomeScreen() {
           }
           hostAttempts={data.hostAttempts}
           hostLastConnected={data.hostLastConnected}
-          hostConnections={data.hostConnections}
+          hostPairingRejected={data.hostPairingRejected}
+          hostSignedOut={data.hostSignedOut}
+          hostPaths={data.hostPaths}
+          hostPendingPaths={data.hostPendingPaths}
           hosts={data.sortedHostCatalog}
           hostStates={data.hostStates}
           isWideLayout={isWideLayout}

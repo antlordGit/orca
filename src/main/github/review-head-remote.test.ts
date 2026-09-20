@@ -120,16 +120,12 @@ describe('resolveGitHubReviewHeadRemote', () => {
     await resolveGitHubReviewHeadRemote({
       repoPath: '/repo',
       connectionId: 'ssh-1',
-      localGitOptions: {
-        wslDistro: 'Ubuntu',
-        ghAccount: { host: 'github.acme.com', user: 'alice' }
-      },
+      localGitOptions: { wslDistro: 'Ubuntu' },
       gitExec: gitExecWithRemotes(['origin', 'upstream'])
     })
 
     expect(getGitHubApiRepositoryForRemoteMock).toHaveBeenCalledWith('/repo', 'upstream', 'ssh-1', {
-      wslDistro: 'Ubuntu',
-      ghAccount: { host: 'github.acme.com', user: 'alice' }
+      wslDistro: 'Ubuntu'
     })
   })
 })

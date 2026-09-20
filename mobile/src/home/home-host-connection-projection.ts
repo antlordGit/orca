@@ -1,4 +1,3 @@
-import type { RelayHostReachability } from '../transport/relay-host-reachability'
 import type { MobileConnectionPath } from '../transport/stable-logical-rpc-client'
 
 export type HomeHostConnectionProjectionEntry = {
@@ -6,20 +5,38 @@ export type HomeHostConnectionProjectionEntry = {
   path: MobileConnectionPath
   pendingPath: MobileConnectionPath | null
   pairingRejected: boolean
-  relayHostReachability: RelayHostReachability
+  hostSignedOut: boolean
 }
 
-export type HomeHostConnections = Record<string, HomeHostConnectionProjectionEntry>
+export type HomeHostConnectionProjection = {
+  hostPaths: Record<string, MobileConnectionPath>
+  hostPendingPaths: Record<string, MobileConnectionPath | null>
+  hostPairingRejected: Record<string, boolean>
+  hostSignedOut: Record<string, boolean>
+}
 
-/** One lookup carrying every connection field, so a new one costs no plumbing. */
+/** Build all host lookup maps while reading each connection entry once. */
 export function projectHomeHostConnections(
   entries: readonly HomeHostConnectionProjectionEntry[]
-): HomeHostConnections {
-  // Why: a host named `__proto__` must land as an own key, not mutate the prototype.
-  const byHostId: HomeHostConnections = Object.create(null)
-  for (const entry of entries) {
-    byHostId[entry.hostId] = entry
+): HomeHostConnectionProjection {
+  // Null-prototype records avoid the __proto__ setter; restore the usual prototype for parity
+  // with Object.fromEntries once the projection is complete.
+  const hostPaths = Object.create(null) as Record<string, MobileConnectionPath>
+  const hostPendingPaths = Object.create(null) as Record<string, MobileConnectionPath | null>
+  const hostPairingRejected = Object.create(null) as Record<string, boolean>
+  const hostSignedOut = Object.create(null) as Record<string, boolean>
+
+  for (const { hostId, path, pendingPath, pairingRejected, hostSignedOut: signedOut } of entries) {
+    hostPaths[hostId] = path
+    hostPendingPaths[hostId] = pendingPath
+    hostPairingRejected[hostId] = pairingRejected
+    hostSignedOut[hostId] = signedOut
   }
-  Object.setPrototypeOf(byHostId, Object.prototype)
-  return byHostId
+
+  Object.setPrototypeOf(hostPaths, Object.prototype)
+  Object.setPrototypeOf(hostPendingPaths, Object.prototype)
+  Object.setPrototypeOf(hostPairingRejected, Object.prototype)
+  Object.setPrototypeOf(hostSignedOut, Object.prototype)
+
+  return { hostPaths, hostPendingPaths, hostPairingRejected, hostSignedOut }
 }

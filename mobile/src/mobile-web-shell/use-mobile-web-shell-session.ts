@@ -23,7 +23,6 @@ import {
   reduceMobileWebShellSession
 } from './mobile-web-shell-session'
 import type {
-  CachedGeneration,
   MobileWebShellReadFailure,
   MobileWebShellSessionEffect,
   MobileWebShellSessionEvent,
@@ -32,8 +31,6 @@ import type {
 
 export type MobileWebShellSessionView = {
   readonly state: MobileWebShellSessionState
-  /** The route patterns this shell would render from the page, for the page to be told about. */
-  readonly pageRoutes: readonly string[]
   readonly retry: () => void
   /** B3's failure reasons, forwarded verbatim; the reducer owns what each one means. */
   readonly reportShellFailure: (reason: MobileWebShellFailureReason) => void
@@ -52,11 +49,9 @@ export type MobileWebShellSessionView = {
  */
 export function useMobileWebShellSession(args: {
   hostId: string
-  /** The route this mount stands for, matched against the page routes the bundle declares. */
-  routePathname: string
   runtime?: MobileWebShellRuntime
 }): MobileWebShellSessionView {
-  const { hostId, routePathname } = args
+  const { hostId } = args
   const gates = useHostProtocolGates()
   const { client, state: connState } = useHostClient(hostId)
 
@@ -66,7 +61,7 @@ export function useMobileWebShellSession(args: {
   const storeRef = useRef<GenerationStore | null>(null)
   storeRef.current ??= runtime.createStore()
 
-  const sessionRef = useRef(createMobileWebShellSession(routePathname))
+  const sessionRef = useRef(createMobileWebShellSession())
   const [state, setState] = useState(sessionRef.current.state)
   const hostKey = useMemo(() => deriveHostCacheKey(hostId), [hostId])
   const startedAtRef = useRef(runtime.now())
@@ -176,11 +171,11 @@ export function useMobileWebShellSession(args: {
   useEffect(() => {
     // A new host is a new session: the old one's latches, cache handle and in-flight work all go.
     invalidate()
-    sessionRef.current = createMobileWebShellSession(routePathname)
+    sessionRef.current = createMobileWebShellSession()
     startedAtRef.current = runtime.now()
     setState(sessionRef.current.state)
     return invalidate
-  }, [hostId, invalidate, routePathname, runtime])
+  }, [hostId, invalidate, runtime])
 
   const { statusPending, statusReadable, hostCapabilities, hostProtocolWindow } = gates
   const reachability = readMobileWebShellReachability(connState, client)
@@ -195,16 +190,15 @@ export function useMobileWebShellSession(args: {
         hostStatus: hostProtocolWindow
       }
     })
-    // `hostId` and `routePathname` are in the list because they are what rebuilds the session
-    // above: the reducer starts nothing on a repeat verdict, so a fresh session nobody re-armed
-    // would sit in `checking` forever. Both, not just the host, because either one rebuilds it.
+    // `hostId` is in the list for the host whose gates read identically to the last one's: the
+    // reducer now starts nothing on a repeat verdict, so a session that never re-armed would sit
+    // in `checking` forever.
   }, [
     dispatch,
     hostCapabilities,
     hostId,
     hostProtocolWindow,
     reachability,
-    routePathname,
     statusPending,
     statusReadable
   ])
@@ -231,20 +225,13 @@ export function useMobileWebShellSession(args: {
     dispatch(epochRef.current, { type: 'page-ready' })
   }, [dispatch])
 
-  return {
-    state,
-    pageRoutes: sessionRef.current.pageRoutes,
-    retry,
-    reportShellFailure,
-    reportDocumentLoaded,
-    reportPageReady
-  }
+  return { state, retry, reportShellFailure, reportDocumentLoaded, reportPageReady }
 }
 
 async function openCache(
   store: GenerationStore,
   hostKey: string
-): Promise<CachedGeneration | null> {
+): Promise<{ buildId: string; directory: string; totalBytes: number } | null> {
   try {
     // Here and nowhere earlier: with the flag off no code path reaches this hook, so a store build
     // never sweeps a cache it never wrote.
@@ -255,8 +242,7 @@ async function openCache(
       : {
           buildId: active.buildId,
           directory: generationDirectoryPath(active.directory),
-          totalBytes: active.manifest.totalBytes,
-          routes: active.manifest.routes
+          totalBytes: active.manifest.totalBytes
         }
   } catch {
     // A cache that cannot be read is not a cache that is wrong: nothing is deleted, and the flow
@@ -293,8 +279,7 @@ async function readManifest(
         runtimeProtocolVersion: manifest.runtimeProtocolVersion,
         minCompatibleRuntimeProtocolVersion: manifest.minCompatibleRuntimeProtocolVersion,
         totalBytes: manifest.totalBytes,
-        totalAssets: manifest.assets.length,
-        routes: manifest.routes
+        totalAssets: manifest.assets.length
       }
     })
   } catch (error) {

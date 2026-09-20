@@ -2,6 +2,7 @@ import { AccountsPane } from './AccountsPane'
 import { AgentsPane } from './AgentsPane'
 import { ComputerUsePane } from './ComputerUsePane'
 import { LinearAgentSkillPane } from './LinearAgentSkillPane'
+import { LocalProvidersPane } from './LocalProvidersPane'
 import { OrchestrationPane } from './OrchestrationPane'
 import { VoicePane } from './VoicePane'
 import { SettingsSection } from './SettingsSection'
@@ -58,6 +59,25 @@ export function renderAccountsSettingsSection(context: SettingsRenderContext): R
           accountOwnerPlatform={terminal.windowsTerminalCapabilities.hostPlatform}
         />
       ) : null}
+    </SettingsSection>
+  )
+}
+
+export function renderLocalProvidersSettingsSection(
+  context: SettingsRenderContext
+): React.JSX.Element {
+  const { navigation, view } = context
+  return (
+    <SettingsSection
+      id="local-providers"
+      title={translate('auto.components.settings.Settings.localProvidersTitle', '模型配置')}
+      description={translate(
+        'auto.components.settings.Settings.localProvidersDescription',
+        '配置 Claude Code 和 Codex 的请求地址、认证、模型与环境变量。'
+      )}
+      searchEntries={navigation.getSectionSearchEntries('local-providers')}
+    >
+      {view.isSectionMounted('local-providers') ? <LocalProvidersPane /> : null}
     </SettingsSection>
   )
 }

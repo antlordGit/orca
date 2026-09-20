@@ -15,6 +15,7 @@ import { useTerminalPaneTitleEffects } from './use-terminal-pane-title-effects'
 import { useTerminalPaneContextActions } from './use-terminal-pane-context-actions'
 import { useTerminalPaneMobileActions } from './use-terminal-pane-mobile-actions'
 import { useTerminalPaneProjection } from './use-terminal-pane-projection'
+import { useAgentTerminalRenameListener } from './agent-terminal-rename'
 
 export function useTerminalPaneController(
   props: TerminalPaneProps,
@@ -35,6 +36,12 @@ export function useTerminalPaneController(
   useTerminalPaneTitleEffects(reconciliation)
   const context = Object.assign(reconciliation, useTerminalPaneContextActions(reconciliation))
   const mobile = Object.assign(context, useTerminalPaneMobileActions(context))
+  useAgentTerminalRenameListener({
+    tabId: mobile.tabId,
+    managerRef: mobile.managerRef,
+    paneTransportsRef: mobile.paneTransportsRef,
+    tabAgentTypeByLeaf: mobile.tabAgentTypeByLeaf
+  })
   return Object.assign(mobile, useTerminalPaneProjection(mobile))
 }
 

@@ -1,9 +1,7 @@
 import { LinearIcon } from '@/components/icons/LinearIcon'
-import { getAccountsPaneSearchEntries } from '@/components/settings/accounts-search'
 import { getAgentsPaneSearchEntries } from '@/components/settings/agents-search'
 import { getComputerUsePaneSearchEntries } from '@/components/settings/computer-use-search'
 import { getGeneralPaneSearchEntries } from '@/components/settings/general-search'
-import { getIntegrationsPaneSearchEntries } from '@/components/settings/integrations-search'
 import { getLinearAgentSkillPaneSearchEntries } from '@/components/settings/linear-agent-skill-search'
 import { getMobileSettingsPaneSearchEntries } from '@/components/settings/mobile-settings-search'
 import { getOrcaAccountSettingsSearchEntries } from '@/components/settings/orca-account-settings-search'
@@ -13,15 +11,14 @@ import { getVoicePaneSearchEntries } from '@/components/settings/voice-pane-sear
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
 import {
-  Blocks,
   Bot,
   CircleUserRound,
   Mic,
   MousePointerClick,
   Network,
+  Server,
   SlidersHorizontal,
-  Smartphone,
-  UserCog
+  Smartphone
 } from 'lucide-react'
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
 
@@ -46,21 +43,36 @@ export function buildCapabilitySettingsSections({
       }),
       group: 'capabilities'
     },
-    {
-      id: 'accounts',
-      title: translate(
-        'auto.hooks.useSettingsNavigationMetadata.f70ac54d38',
-        'AI Provider Accounts'
-      ),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.b1c2f8b0ac',
-        'Optional account switching and usage setup for Claude, Codex, Gemini, OpenCode Go, MiniMax, and Grok.'
-      ),
-      icon: UserCog,
-      searchEntries: getAccountsPaneSearchEntries(),
-      group: 'capabilities',
-      badge: translate('auto.hooks.useSettingsNavigationMetadata.7c79d3b7bf', 'Optional')
-    },
+    ...(showDesktopOnlySettings
+      ? [
+          {
+            id: 'local-providers',
+            title: translate(
+              'auto.hooks.useSettingsNavigationMetadata.localProvidersTitle',
+              '模型配置'
+            ),
+            description: translate(
+              'auto.hooks.useSettingsNavigationMetadata.localProvidersDescription',
+              '配置 Claude Code 和 Codex 的请求地址、认证、模型与环境变量。'
+            ),
+            icon: Server,
+            searchEntries: [
+              {
+                title: translate(
+                  'auto.hooks.useSettingsNavigationMetadata.localProvidersTitle',
+                  'Local Providers'
+                ),
+                description: translate(
+                  'auto.hooks.useSettingsNavigationMetadata.localProvidersDescription',
+                  'Configure local Claude and Codex provider commands.'
+                ),
+                keywords: ['claude', 'codex', 'command', 'secret', 'environment']
+              }
+            ],
+            group: 'capabilities'
+          }
+        ]
+      : []),
     {
       id: 'orchestration',
       title: translate('auto.hooks.useSettingsNavigationMetadata.58a868e8e4', 'Orchestration'),
@@ -183,17 +195,6 @@ export function buildSetupSettingsSections({
       ),
       icon: SlidersHorizontal,
       searchEntries: getGeneralPaneSearchEntries({ includeProjectRuntime: isLocalWindowsHost }),
-      group: 'setup'
-    },
-    {
-      id: 'integrations',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.2b043783ef', 'Integrations'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.33a5e1d597',
-        'Connect GitHub, GitLab, Linear, and source-hosting services.'
-      ),
-      icon: Blocks,
-      searchEntries: getIntegrationsPaneSearchEntries(),
       group: 'setup'
     },
     ...(showDesktopOnlySettings

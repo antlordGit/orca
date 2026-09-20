@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { RelayAuthCoordinator, type RelayAuthContext } from './relay-auth-coordinator'
-import type { RelayAccessTokenRefresh } from './relay-session-broker-contract'
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -197,7 +196,7 @@ describe('RelayAuthCoordinator', () => {
 
   it('rejects a refresh result after capability removal', async () => {
     let current: RelayAuthContext | null = context
-    let refreshAccessToken: (() => Promise<RelayAccessTokenRefresh>) | null = null
+    let refreshAccessToken: (() => Promise<string | null>) | null = null
     const coordinator = new RelayAuthCoordinator({
       readContext: async () => current,
       openBroker: async (input) => {
@@ -210,7 +209,7 @@ describe('RelayAuthCoordinator', () => {
     await vi.waitFor(() => expect(refreshAccessToken).not.toBeNull())
     current = { ...context, relayEntitled: false }
     coordinator.reconcile()
-    await expect(refreshAccessToken!()).resolves.toEqual({ accessToken: null })
+    await expect(refreshAccessToken!()).resolves.toBeNull()
   })
 
   it('invalidates pending ownership immediately while broker opening is paused', async () => {
@@ -243,7 +242,7 @@ describe('RelayAuthCoordinator', () => {
     const refreshRead = deferred<RelayAuthContext | null>()
     let readCount = 0
     let current = context
-    let refreshAccessToken: (() => Promise<RelayAccessTokenRefresh>) | null = null
+    let refreshAccessToken: (() => Promise<string | null>) | null = null
     const coordinator = new RelayAuthCoordinator({
       readContext: () => {
         readCount += 1
@@ -262,7 +261,7 @@ describe('RelayAuthCoordinator', () => {
     coordinator.reconcile()
     refreshRead.resolve(context)
 
-    await expect(refreshing).resolves.toEqual({ accessToken: null })
+    await expect(refreshing).resolves.toBeNull()
     await vi.waitFor(() => expect(readCount).toBeGreaterThanOrEqual(3))
   })
 

@@ -1,10 +1,9 @@
 import type { GitHubOwnerRepo, GitHubPRFile } from '../../shared/github/pull-request-types'
 import type { Repo } from '../../shared/repo-types'
-import type { LocalProjectGhExecOptions } from '../project-runtime-git-options'
 import { getIssue, getPRCheckDetails, getPRChecks, getPRComments } from '../github/client'
 import { getPRFileContents } from '../github/work-item-details'
 
-type LocalGitArgs = [] | [LocalProjectGhExecOptions]
+type LocalGitArgs = [] | [{ wslDistro?: string }]
 
 type RuntimeGitHubReviewQueryCommandsDeps = {
   resolveRepo: (selector: string) => Promise<Repo>

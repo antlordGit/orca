@@ -98,15 +98,6 @@ describe('markdown table of contents', () => {
     ])
   })
 
-  it('extracts emphasized headings next to Korean text', () => {
-    const toc = buildMarkdownTableOfContents('# **"이런"**것은 강조됩니다')
-
-    expect(toc[0]).toMatchObject({
-      id: '이런것은-강조됩니다',
-      title: '"이런"것은 강조됩니다'
-    })
-  })
-
   it('uses GitHub-compatible duplicate slugs', () => {
     const toc = buildMarkdownTableOfContents('# Repeat\n# Repeat')
 

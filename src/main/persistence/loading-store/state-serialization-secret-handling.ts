@@ -3,6 +3,7 @@ import type { PersistedState } from '../../../shared/persisted-state-types'
 import { collectFolderWorkspaceDiffComments } from '../../folder-workspace-diff-comments'
 import {
   PROTECTED_SECRET_SLOT,
+  localProviderSecretSlot,
   sshPtyOwnerLeaseSecretSlot,
   type ProtectedSecretRetentionUpdate
 } from '../../protected-secret-persistence'
@@ -122,6 +123,12 @@ export class StateSerializationSecretHandlingOperations {
           )
         })
       ),
+      localProviders: (this.runtime.state.localProviders ?? []).map((provider) => ({
+        ...provider,
+        secret: encryptToSentinel(localProviderSecretSlot(provider.id), provider.secret ?? ''),
+        args: [...provider.args],
+        env: { ...provider.env }
+      })),
       settings: {
         ...stripRetiredGlobalSettings(this.runtime.state.settings),
         opencodeSessionCookie: encryptToSentinel(

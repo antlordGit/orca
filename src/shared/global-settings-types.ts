@@ -436,6 +436,11 @@ export type GlobalSettings = {
   mobileEmulatorDefaultDeviceUdid?: string | null
   /** Explicit Android SDK root for when auto-discovery (ANDROID_HOME / default path) fails; null (default) auto-discovers. */
   androidSdkPath?: string | null
+  /** Claude Code config root (`CLAUDE_CONFIG_DIR`): the dir holding settings.json. null = CLI default (~/.claude).
+   *  A non-default value moves the CLI off the default Keychain item, so a claude.ai OAuth login stops working. */
+  claudeConfigDir?: string | null
+  /** Codex config root (`CODEX_HOME`): the dir holding config.toml. null = CLI default (~/.codex). */
+  codexConfigDir?: string | null
   /** Auto-restore window (ms) for a phone-fit PTY after the last mobile subscriber leaves.
    *  `null` (default) holds phone size indefinitely; a finite value schedules restore.
    *  Clamped on read to [5_000ms, 60min]. See docs/mobile-fit-hold.md. */

@@ -49,14 +49,6 @@ export function mergeWorkspaceSessions(
       ...base.terminalLayoutsByTabId,
       ...incoming.terminalLayoutsByTabId
     },
-    ...(base.localOnlyScrollbackByTabId || incoming.localOnlyScrollbackByTabId
-      ? {
-          localOnlyScrollbackByTabId: {
-            ...base.localOnlyScrollbackByTabId,
-            ...incoming.localOnlyScrollbackByTabId
-          }
-        }
-      : {}),
     openFilesByWorktree: { ...base.openFilesByWorktree, ...incoming.openFilesByWorktree },
     browserTabsByWorktree: {
       ...base.browserTabsByWorktree,
@@ -142,7 +134,6 @@ export function removeRepoFromWorkspaceSession(
   }
   for (const tabId of removedTerminalTabIds) {
     delete next.terminalLayoutsByTabId[tabId]
-    delete next.localOnlyScrollbackByTabId?.[tabId]
   }
   const removedBrowserWorkspaceIds = new Set<string>()
   for (const [ownerKey, workspaces] of Object.entries(next.browserTabsByWorktree ?? {})) {

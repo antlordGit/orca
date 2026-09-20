@@ -3,7 +3,10 @@ import { useShallow } from 'zustand/react/shallow'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { useAppStore } from '../../store'
 import { getCachedTerminalTabForWorktree } from './terminal-tab-lookup'
-import { selectTerminalTabAgentTypesByLeaf } from './terminal-tab-agent-type-index'
+import {
+  selectTerminalTabAgentTypesByLeaf,
+  selectLiveTerminalTabAgentTypesByLeaf
+} from './terminal-tab-agent-type-index'
 import { collectLeafIdsInOrder, EMPTY_LAYOUT } from './layout-serialization'
 import { sanitizeTerminalLayoutPaneTitles } from '@/lib/terminal-pane-title-sanitization'
 import { resolveNativeChatLeafTitleAgent } from './native-chat-leaf-title-agent'
@@ -60,6 +63,13 @@ export function useTerminalPaneChatState(controller: TerminalPaneTitleController
   )
   const tabAgentTypeByLeaf = useAppStore((store) =>
     selectTerminalTabAgentTypesByLeaf(
+      store.agentStatusByPaneKey,
+      tabId,
+      store.paneForegroundAgentByPaneKey
+    )
+  )
+  const liveTabAgentTypeByLeaf = useAppStore((store) =>
+    selectLiveTerminalTabAgentTypesByLeaf(
       store.agentStatusByPaneKey,
       tabId,
       store.paneForegroundAgentByPaneKey
@@ -277,6 +287,7 @@ export function useTerminalPaneChatState(controller: TerminalPaneTitleController
     unifiedTabLabel,
     runtimePaneTitlesByPaneId,
     tabAgentTypeByLeaf,
+    liveTabAgentTypeByLeaf,
     setTabViewMode,
     savedLayout,
     terminalTab,

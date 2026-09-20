@@ -3,7 +3,6 @@ import type { OrcaCloudAuthConfig } from '../../orca-profiles/profile-cloud-auth
 import type { MobileRelayStatus } from '../../../shared/mobile-relay-status'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import type { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
-import type { RelayHostCloseReason } from '../../../shared/relay-host-close-reason'
 import type { RelayRegion } from './relay-region-preference'
 import type { RelayRegionDecision, RelayRegionWindow } from './relay-region-correction-protocol'
 
@@ -15,12 +14,6 @@ export type RelayIdentity = {
   organizationId: string
 }
 
-// A refused renewal carries the reason the auth owner already computed, so the
-// broker closing first never costs the phone the cause.
-export type RelayAccessTokenRefresh =
-  | { accessToken: string }
-  | { accessToken: null; hostCloseReason?: RelayHostCloseReason }
-
 export type RelaySessionBrokerOptions = {
   authConfig: OrcaCloudAuthConfig
   accessToken: string
@@ -29,7 +22,7 @@ export type RelaySessionBrokerOptions = {
   appVersion: string
   mobileSocketWiring: MobileSocketWiring
   isCurrent: () => boolean
-  refreshAccessToken: () => Promise<RelayAccessTokenRefresh>
+  refreshAccessToken: () => Promise<string | null>
   resolvePreferredRegion?: () => Promise<RelayRegion | undefined>
   measureRegionDecision?: (window: RelayRegionWindow) => Promise<RelayRegionDecision>
   onAssignedCellActive?: (cellUrl: string) => void

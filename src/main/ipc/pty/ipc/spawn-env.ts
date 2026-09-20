@@ -20,6 +20,7 @@ import { parseValidPaneKey } from '../pane/key-state'
 import { shouldRefreshNativeClaudeAgentTeamsEnv } from '../pane/launch-authority'
 import type { PtyIpcSpawnState } from './spawn-state'
 import { assemblePtyIpcSpawnCodexEnv } from './spawn-env-codex'
+import { buildEnabledLocalProviderEnvironment } from '../../../local-providers/local-provider-session-environment'
 
 export async function assemblePtyIpcSpawnEnv(ctx: PtyIpcSpawnState): Promise<void> {
   const args = ctx.args
@@ -71,6 +72,21 @@ export async function assemblePtyIpcSpawnEnv(ctx: PtyIpcSpawnState): Promise<voi
       : null
   ctx.stablePaneKey = verifiedPaneKey ?? ctx.migrationUnsupportedPaneKey ?? ctx.metadataPaneKey
   ctx.baseEnv = baseEnvWithAuth ? { ...baseEnvWithAuth } : undefined
+  if (ctx.baseEnv && !args.connectionId) {
+    const settings = ctx.deps.getSettings?.()
+    ctx.baseEnv = buildEnabledLocalProviderEnvironment({
+      store: ctx.deps.store,
+      launchAgent: args.launchAgent,
+      command: args.command,
+      baseEnv: ctx.baseEnv,
+      configDirs: settings
+        ? {
+            claudeConfigDir: settings.claudeConfigDir ?? null,
+            codexConfigDir: settings.codexConfigDir ?? null
+          }
+        : undefined
+    })
+  }
   const shouldRefreshAgentTeamsEnv =
     !ctx.preAdoptedStablePane &&
     !args.connectionId &&

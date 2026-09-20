@@ -6,7 +6,6 @@ import {
   toError
 } from './mobile-endpoint-supervisor-support'
 import { persistResumeConfirmation } from './mobile-relay-credential-rotation'
-import { relayFailureAllowsGraceRetry } from './relay-credential-eligibility'
 import type { MobileRelayCredentialBundle } from './mobile-relay-credential-bundle'
 import type { RelayReconnectController } from './mobile-relay-reconnect-controller'
 import type { StableLogicalRpcClient } from './stable-logical-rpc-client'
@@ -67,7 +66,7 @@ export class MobileRelaySessionEstablisher {
       }
       lastError = result.error
       this.args.onDialFailure(result.error)
-      if (!relayFailureAllowsGraceRetry(result.error)) {
+      if (!this.args.controller.shouldTryGraceAfterRelayFailure(result.error)) {
         break
       }
       // Why: a rejected version stays invalid; retry only the grace credential.
@@ -103,12 +102,13 @@ export class MobileRelaySessionEstablisher {
       relay,
       credential,
       `confirm-${encodeBase64Url(args.randomBytes(16))}`,
-      // Asserted on the controller's latch, not on the dial result: the close
-      // that carries the reason can land after this dial has already reported
-      // its failure. Only a connection retires it.
+      // Latched on the logical client, not on the dial result: the close that
+      // carries the reason can land after this dial has already reported its
+      // failure. Clearing is clearAfterConnected's job, so any path that
+      // reaches connected retires it.
       (reason) => {
         if (reason === RELAY_HOST_CLOSE_REASON.SIGNED_OUT) {
-          args.controller.assertHostReachability('signed-out')
+          args.logical.setHostSignedOut(true)
         }
       }
     )

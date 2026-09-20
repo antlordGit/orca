@@ -11,6 +11,7 @@ import { track } from '../telemetry/client'
 import { SETTINGS_CHANGED_WHITELIST, type SettingsChangedKey } from '../../shared/telemetry-events'
 import type { AgentAwakeService } from '../agent-awake-service'
 import { sanitizeFloatingWorkspaceDirectorySetting } from './floating-workspace-directory'
+import { sanitizeLocalProviderConfigDir } from './local-provider-config-dir-setting'
 import { applyAgentStatusHooksEnabled } from '../agent-hooks/managed-agent-hook-controls'
 import { recordManagedHookInstallFailure } from '../agent-hooks/install-telemetry'
 import { applyElectronProxySettings } from '../network/proxy-settings'
@@ -187,6 +188,16 @@ export function registerSettingsHandlers(
     if ('mobilePairingCustomAddresses' in args) {
       sanitizedArgs.mobilePairingCustomAddresses = normalizeMobilePairingCustomAddresses(
         args.mobilePairingCustomAddresses
+      )
+    }
+    if ('claudeConfigDir' in args) {
+      sanitizedArgs.claudeConfigDir = sanitizeLocalProviderConfigDir(
+        String(args.claudeConfigDir ?? '')
+      )
+    }
+    if ('codexConfigDir' in args) {
+      sanitizedArgs.codexConfigDir = sanitizeLocalProviderConfigDir(
+        String(args.codexConfigDir ?? '')
       )
     }
     if (args.theme) {

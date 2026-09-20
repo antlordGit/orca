@@ -34,7 +34,6 @@ export function buildWebSessionTabsFinalPatch(
     nextTabBarOrderByWorktree,
     nextPtyIdsByTabId,
     nextTerminalLayoutsByTabId,
-    nextLocalOnlyScrollbackByTabId,
     nextUnreadTerminalTabs,
     pendingStartupByTabId,
     nextPendingStartupByTabId,
@@ -105,9 +104,6 @@ export function buildWebSessionTabsFinalPatch(
     ...(nextPtyIdsByTabId !== state.ptyIdsByTabId ? { ptyIdsByTabId: nextPtyIdsByTabId } : {}),
     ...(nextTerminalLayoutsByTabId !== state.terminalLayoutsByTabId
       ? { terminalLayoutsByTabId: nextTerminalLayoutsByTabId }
-      : {}),
-    ...(nextLocalOnlyScrollbackByTabId !== state.localOnlyScrollbackByTabId
-      ? { localOnlyScrollbackByTabId: nextLocalOnlyScrollbackByTabId }
       : {}),
     ...(nextUnreadTerminalTabs !== state.unreadTerminalTabs
       ? { unreadTerminalTabs: nextUnreadTerminalTabs }

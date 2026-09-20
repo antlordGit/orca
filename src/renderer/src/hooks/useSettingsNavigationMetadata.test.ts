@@ -33,16 +33,15 @@ function ids(
 
 describe('settings navigation metadata', () => {
   it('puts AI capability panes at the top on desktop', () => {
-    expect(ids().slice(0, 10)).toEqual([
+    expect(ids().slice(0, 9)).toEqual([
       'agents',
-      'accounts',
+      'local-providers',
       'orchestration',
       'computer-use',
       'voice',
       'orca-account',
       'setup-guide',
       'general',
-      'integrations',
       'mobile'
     ])
   })
@@ -95,30 +94,21 @@ describe('settings navigation metadata', () => {
     expect(sections.find((section) => section.id === 'mobile')?.group).toBe('setup')
   })
 
-  it('places Automations, Artifacts, and Share Skills first under Workflows', () => {
+  it('leads the Workflows group with Share Skills', () => {
     const sections = buildSettingsNavigationMetadata({
       isMac: false,
       isWindows: false,
       isWebClient: false,
       repos: [repo]
     })
-    const automations = sections.find((section) => section.id === 'automations')
-    const artifacts = sections.find((section) => section.id === 'artifacts')
     const shareSkills = sections.find((section) => section.id === 'share-skills')
     const workflowIds = sections
       .filter((section) => section.group === 'workflows')
       .map((section) => section.id)
 
-    expect(automations?.group).toBe('workflows')
-    expect(automations?.searchEntries[0]?.title).toBe('Show Automations Button')
-    expect(artifacts?.group).toBe('workflows')
-    expect(artifacts?.badge).toBe('Beta')
-    expect(artifacts?.description).toBe(
-      'Share HTML and Markdown files with your team and manage their public links.'
-    )
     expect(shareSkills).toMatchObject({ group: 'workflows', badge: 'Beta' })
     expect(shareSkills?.searchEntries[0]?.title).toBe('Unlisted skill links')
-    expect(workflowIds.slice(0, 3)).toEqual(['automations', 'artifacts', 'share-skills'])
+    expect(workflowIds[0]).toBe('share-skills')
   })
 
   it('places the Orca account in Set Up on desktop only', () => {
@@ -136,13 +126,12 @@ describe('settings navigation metadata', () => {
   })
 
   it('puts web-safe AI capability panes at the top while hiding desktop-only panes', () => {
-    expect(ids({ isWebClient: true }).slice(0, 6)).toEqual([
+    expect(ids({ isWebClient: true }).slice(0, 5)).toEqual([
       'agents',
-      'accounts',
       'orchestration',
       'setup-guide',
       'general',
-      'integrations'
+      'share-skills'
     ])
   })
 

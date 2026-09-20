@@ -21,88 +21,75 @@ export type LocationDescriptor = {
   readonly rva: number
 }
 
-export type MinidumpSource = {
-  readonly byteLength: number
-  read(offset: number, size: number): Promise<Buffer>
-}
-
 export class MinidumpView {
-  constructor(private readonly source: MinidumpSource) {}
+  constructor(private readonly buf: Buffer) {}
 
   get byteLength(): number {
-    return this.source.byteLength
+    return this.buf.length
   }
 
-  async u32(offset: number): Promise<number | null> {
-    if (offset < 0 || offset + 4 > this.source.byteLength) {
+  u32(offset: number): number | null {
+    if (offset < 0 || offset + 4 > this.buf.length) {
       return null
     }
-    const bytes = await this.source.read(offset, 4)
-    return bytes.length === 4 ? bytes.readUInt32LE(0) : null
+    return this.buf.readUInt32LE(offset)
   }
 
-  async u16(offset: number): Promise<number | null> {
-    if (offset < 0 || offset + 2 > this.source.byteLength) {
+  u16(offset: number): number | null {
+    if (offset < 0 || offset + 2 > this.buf.length) {
       return null
     }
-    const bytes = await this.source.read(offset, 2)
-    return bytes.length === 2 ? bytes.readUInt16LE(0) : null
+    return this.buf.readUInt16LE(offset)
   }
 
-  async u64(offset: number): Promise<bigint | null> {
-    if (offset < 0 || offset + 8 > this.source.byteLength) {
+  u64(offset: number): bigint | null {
+    if (offset < 0 || offset + 8 > this.buf.length) {
       return null
     }
-    const bytes = await this.source.read(offset, 8)
-    return bytes.length === 8 ? bytes.readBigUInt64LE(0) : null
+    return this.buf.readBigUInt64LE(offset)
   }
 
-  async location(offset: number): Promise<LocationDescriptor | null> {
-    const size = await this.u32(offset)
-    const rva = await this.u32(offset + 4)
+  location(offset: number): LocationDescriptor | null {
+    const size = this.u32(offset)
+    const rva = this.u32(offset + 4)
     if (size === null || rva === null) {
       return null
     }
     // A zero rva means "absent", which is normal for optional sub-structures.
-    if (rva === 0 || rva >= this.source.byteLength) {
+    if (rva === 0 || rva >= this.buf.length) {
       return null
     }
     return { size, rva }
   }
 
   /** MinidumpUTF8String: u32 byte length, then NUL-terminated UTF-8. */
-  async utf8String(rva: number, maxBytes = MAX_ANNOTATION_VALUE_BYTES): Promise<string | null> {
-    return (await this.byteArray(rva, maxBytes))?.toString('utf8') ?? null
+  utf8String(rva: number, maxBytes = MAX_ANNOTATION_VALUE_BYTES): string | null {
+    return this.byteArray(rva, maxBytes)?.toString('utf8') ?? null
   }
 
   /** MINIDUMP_STRING: u32 byte length, then UTF-16LE. Used for module names. */
-  async utf16String(rva: number, maxBytes = MAX_ANNOTATION_VALUE_BYTES): Promise<string | null> {
-    const length = await this.u32(rva)
+  utf16String(rva: number, maxBytes = MAX_ANNOTATION_VALUE_BYTES): string | null {
+    const length = this.u32(rva)
     if (length === null || length > maxBytes || length % 2 !== 0) {
       return null
     }
     const start = rva + 4
-    if (start + length > this.source.byteLength) {
+    if (start + length > this.buf.length) {
       return null
     }
-    const bytes = await this.source.read(start, length)
-    return bytes.length === length ? bytes.toString('utf16le') : null
+    return this.buf.toString('utf16le', start, start + length)
   }
 
-  async bytes(
-    location: LocationDescriptor,
-    maxBytes = MAX_ANNOTATION_VALUE_BYTES
-  ): Promise<Buffer | null> {
-    if (location.size > maxBytes || location.rva + location.size > this.source.byteLength) {
+  bytes(location: LocationDescriptor, maxBytes = MAX_ANNOTATION_VALUE_BYTES): Buffer | null {
+    if (location.size > maxBytes || location.rva + location.size > this.buf.length) {
       return null
     }
-    const bytes = await this.source.read(location.rva, location.size)
-    return bytes.length === location.size ? bytes : null
+    return this.buf.subarray(location.rva, location.rva + location.size)
   }
 
   /** MinidumpByteArray: u32 byte length, then the bytes. */
-  async byteArray(rva: number, maxBytes = MAX_ANNOTATION_VALUE_BYTES): Promise<Buffer | null> {
-    const length = await this.u32(rva)
+  byteArray(rva: number, maxBytes = MAX_ANNOTATION_VALUE_BYTES): Buffer | null {
+    const length = this.u32(rva)
     if (length === null || length > maxBytes) {
       return null
     }
@@ -115,26 +102,23 @@ export function isMinidump(dump: Buffer): boolean {
 }
 
 /** Locates a stream by type in the header's directory, or null if absent. */
-export async function findStream(
-  view: MinidumpView,
-  streamType: number
-): Promise<LocationDescriptor | null> {
-  const streamCount = await view.u32(8)
-  const directoryRva = await view.u32(12)
+export function findStream(view: MinidumpView, streamType: number): LocationDescriptor | null {
+  const streamCount = view.u32(8)
+  const directoryRva = view.u32(12)
   if (streamCount === null || directoryRva === null || streamCount > MAX_STREAMS) {
     return null
   }
   for (let index = 0; index < streamCount; index += 1) {
     const entry = directoryRva + index * DIRECTORY_ENTRY_SIZE
-    const type = await view.u32(entry)
+    const type = view.u32(entry)
     if (type === null) {
       return null
     }
     if (type !== streamType) {
       continue
     }
-    const size = await view.u32(entry + 4)
-    const rva = await view.u32(entry + 8)
+    const size = view.u32(entry + 4)
+    const rva = view.u32(entry + 8)
     if (size === null || rva === null || rva === 0 || rva >= view.byteLength) {
       return null
     }

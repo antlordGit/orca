@@ -1,5 +1,4 @@
 import type { ExecutionHostId } from '../../shared/execution-host'
-import type { GhAccountBinding } from '../../shared/github/account-binding'
 import type {
   HostRepoCatalogSnapshot,
   ListReposForExecutionHostArgs
@@ -71,7 +70,6 @@ export type RepositoryApi = {
       agentWorktreeVisibility?: Repo['agentWorktreeVisibility'] | null
       sourceControlAi?: Repo['sourceControlAi'] | null
       externalWorktreeDiscoverySuppressedAt?: Repo['externalWorktreeDiscoverySuppressedAt'] | null
-      ghAccount?: GhAccountBinding | null
     }
   }) => Promise<Repo>
   pickFolder: () => Promise<string | null>

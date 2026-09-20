@@ -362,7 +362,11 @@ export default function AiVaultPanel(): React.JSX.Element {
       ) : null}
 
       {!searching && <AiVaultScanIssueBanners scanResult={scanResult} />}
-      <AiVaultPanelSearch search={search} noAgents={agents.length === 0}>
+      <AiVaultPanelSearch
+        search={search}
+        noAgents={agents.length === 0}
+        onDismiss={() => setQuery('')}
+      >
         {(!searching || sessions.length > 0 || search.loading) && (
           <AiVaultSessionVirtualList
             key={searching ? search.resetKey : 'history'}

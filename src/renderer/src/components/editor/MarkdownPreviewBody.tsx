@@ -7,7 +7,6 @@ import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import rehypeSlug from 'rehype-slug'
 import remarkBreaks from 'remark-breaks'
-import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -56,7 +55,6 @@ const markdownPreviewSanitizeSchema = {
 type MarkdownPluginList = NonNullable<ReactMarkdownOptions['remarkPlugins']>
 const MARKDOWN_REMARK_PLUGINS: MarkdownPluginList = [
   remarkGfm,
-  remarkCjkFriendly,
   remarkBreaks,
   remarkFrontmatter,
   remarkMath,

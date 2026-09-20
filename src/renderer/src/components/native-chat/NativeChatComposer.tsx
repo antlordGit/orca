@@ -107,6 +107,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
     )
     const dictationState = useAppStore((store) => store.dictationState)
     const voiceSettings = useAppStore((store) => store.settings?.voice)
+    const promptShortcuts = useNativeChatPromptShortcuts(agent)
     const dictationDisabled = voiceSettings?.enabled !== true || !voiceSettings.sttModel
     const isDictating =
       dictationPressed ||
@@ -290,7 +291,6 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       clearImageAttachments,
       setNotice
     })
-    const promptShortcuts = useNativeChatPromptShortcuts(agent)
     const { send, sendPromptShortcut } = useNativeChatComposerSendActions({
       disabled,
       draft,

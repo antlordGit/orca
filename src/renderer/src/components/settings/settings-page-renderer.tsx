@@ -9,6 +9,7 @@ import {
   renderAgentsSettingsSection,
   renderDesktopCapabilitySettingsSections,
   renderLinearSettingsSection,
+  renderLocalProvidersSettingsSection,
   renderOrchestrationSettingsSection
 } from './settings-capability-section-renderers'
 import {
@@ -117,6 +118,7 @@ export function renderSettingsPage(context: SettingsRenderContext): React.JSX.El
               <ActiveSettingsSectionProvider value={model.activeSectionId}>
                 {renderAgentsSettingsSection(context)}
                 {renderAccountsSettingsSection(context)}
+                {renderLocalProvidersSettingsSection(context)}
                 {renderOrchestrationSettingsSection(context)}
                 {renderLinearSettingsSection(context)}
                 {renderDesktopCapabilitySettingsSections(context)}

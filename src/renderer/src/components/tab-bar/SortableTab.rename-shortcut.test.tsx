@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { requestTerminalTabRename } from './terminal-tab-rename-request'
+import { AGENT_TERMINAL_RENAME_EVENT } from '../terminal-pane/agent-terminal-rename'
 
 const windowListeners = new Map<string, Set<(event: Event) => void>>()
 
@@ -380,6 +381,30 @@ describe('SortableTab rename shortcut signal', () => {
     const rerender = expandNode(await renderSortableTab())
 
     expect(findElementsByType(rerender, 'input')).toHaveLength(0)
+  })
+
+  it('emits an agent rename request after committing a changed title', async () => {
+    const onSetCustomTitle = vi.fn()
+    const renameRequests: CustomEvent[] = []
+    const listener = (event: Event): void => {
+      renameRequests.push(event as CustomEvent)
+    }
+    window.addEventListener(AGENT_TERMINAL_RENAME_EVENT, listener)
+
+    await renderSortableTab({ onSetCustomTitle })
+    requestTerminalTabRename('terminal-tab-1')
+    let rerender = expandNode(await renderSortableTab({ onSetCustomTitle }))
+    let input = findElementsByType(rerender, 'input')[0]
+    ;(input.props.onChange as (event: { target: { value: string } }) => void)({
+      target: { value: 'Release notes' }
+    })
+    rerender = expandNode(await renderSortableTab({ onSetCustomTitle }))
+    input = findElementsByType(rerender, 'input')[0]
+    pressInputKey(input, 'Enter')
+
+    expect(renameRequests).toHaveLength(1)
+    expect(renameRequests[0].detail).toEqual({ tabId: 'terminal-tab-1', title: 'Release notes' })
+    window.removeEventListener(AGENT_TERMINAL_RENAME_EVENT, listener)
   })
 
   it('ignores IME composition Enter before committing the custom tab title', async () => {

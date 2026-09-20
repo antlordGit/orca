@@ -68,8 +68,6 @@ export type ConnectionLogEntry = {
   detail?: string
   code?: ConnectionDiagnosticCode
   path?: MobileConnectionDiagnosticPath
-  // The relay close code behind a relay-dial-failed entry, so diagnostics need not read it out of `detail`.
-  relayCloseCode?: number
 }
 
 export type ConnectionLogSink = (entry: ConnectionLogEntry) => void

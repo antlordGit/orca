@@ -1,6 +1,5 @@
 import type { ListWorkItemsResult } from '../../shared/github/work-item-types'
 import type { Repo } from '../../shared/repo-types'
-import type { LocalProjectGhExecOptions } from '../project-runtime-git-options'
 import {
   countWorkItems,
   getWorkItem,
@@ -11,15 +10,10 @@ import {
   listWorkItems,
   type MainWorkItem
 } from '../github/client'
-import {
-  listGhAccountBindingInventory,
-  validateGhAccountBinding
-} from '../github/gh-account-binding-inventory'
 import { getRateLimit } from '../github/rate-limit'
-import { githubHostFromIdentityKey } from '../../shared/github/repository-identity-key'
 import { getWorkItemDetails } from '../github/work-item-details'
 
-type LocalGitArgs = [] | [LocalProjectGhExecOptions]
+type LocalGitArgs = [] | [{ wslDistro?: string }]
 
 type RuntimeGitHubRepositoryQueryCommandsDeps = {
   resolveRepo: (selector: string) => Promise<Repo>
@@ -150,30 +144,5 @@ export class RuntimeGitHubRepositoryQueryCommands {
     force?: boolean
   }): Promise<Awaited<ReturnType<typeof getRateLimit>>> {
     return getRateLimit(options)
-  }
-
-  async listGitHubBindableAccounts(
-    repoSelector: string,
-    options?: { refreshCapability?: boolean }
-  ): Promise<Awaited<ReturnType<typeof listGhAccountBindingInventory>>> {
-    const repo = await this.deps.resolveRepo(repoSelector)
-    const requiredHost = githubHostFromIdentityKey(repo.gitRemoteIdentity?.canonicalKey)
-    return listGhAccountBindingInventory(this.deps.getLocalGitArgs(repo)[0] ?? {}, {
-      refreshCapability: options?.refreshCapability === true,
-      ...(requiredHost ? { requiredHost } : {})
-    })
-  }
-
-  async validateGitHubAccountBinding(
-    repoSelector: string,
-    binding: { host: string; user: string }
-  ): Promise<Awaited<ReturnType<typeof validateGhAccountBinding>>> {
-    const repo = await this.deps.resolveRepo(repoSelector)
-    const requiredHost = githubHostFromIdentityKey(repo.gitRemoteIdentity?.canonicalKey)
-    return validateGhAccountBinding(
-      binding,
-      this.deps.getLocalGitArgs(repo)[0] ?? {},
-      requiredHost ? { requiredHost } : {}
-    )
   }
 }

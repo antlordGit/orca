@@ -1,24 +1,13 @@
-import { getArtifactsSettingsSearchEntries } from '@/components/settings/artifacts-settings-search'
-import { getAutomationsSettingsSearchEntries } from '@/components/settings/automations-settings-search'
 import { getBrowserPaneCombinedSearchEntries } from '@/components/settings/browser-pane-search'
-import { getCommitMessageAiPaneSearchEntries } from '@/components/settings/commit-message-ai-search'
 import { getFloatingWorkspaceSearchEntries } from '@/components/settings/floating-workspace-search'
-import { getGitProviderApiBudgetSearchEntries } from '@/components/settings/git-provider-api-budget-search'
-import { getGitPaneSearchEntries } from '@/components/settings/git-search'
 import { getMobileEmulatorSearchEntries } from '@/components/settings/mobile-emulator-search'
 import { getQuickCommandsPaneSearchEntries } from '@/components/settings/quick-commands-search'
 import { getShareSkillsSettingsSearchEntries } from '@/components/settings/share-skills-settings-search'
-import { getTasksPaneSearchEntries } from '@/components/settings/tasks-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
 import {
   BookOpen,
-  CalendarClock,
-  Files,
-  History,
-  GitBranch,
   Globe,
-  ListChecks,
   PanelsTopLeft,
   Play,
   SquareTerminal,
@@ -33,29 +22,6 @@ export function buildWorkflowSettingsSections(
   const showDesktopOnlySettings = !isWebClient
   return [
     {
-      id: 'automations',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.automationsTitle', 'Automations'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.automationsDescription',
-        'Schedule agent work and choose whether Automations appears in the sidebar.'
-      ),
-      icon: CalendarClock,
-      searchEntries: getAutomationsSettingsSearchEntries(),
-      group: 'workflows'
-    },
-    {
-      id: 'artifacts',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.artifactsTitle', 'Artifacts'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.artifactsDescription',
-        'Share HTML and Markdown files with your team and manage their public links.'
-      ),
-      icon: Files,
-      searchEntries: getArtifactsSettingsSearchEntries(),
-      group: 'workflows',
-      badge: translate('auto.hooks.useSettingsNavigationMetadata.40d80bad8a', 'Beta')
-    },
-    {
       id: 'share-skills',
       title: translate('auto.hooks.useSettingsNavigationMetadata.shareSkillsTitle', 'Share Skills'),
       description: translate(
@@ -68,56 +34,6 @@ export function buildWorkflowSettingsSections(
       searchEntries: getShareSkillsSettingsSearchEntries(),
       group: 'workflows',
       badge: translate('auto.hooks.useSettingsNavigationMetadata.40d80bad8a', 'Beta')
-    },
-    {
-      id: 'session-history',
-      title: translate('sessionHistory.settings.title', 'Agent Session Search'),
-      description: translate(
-        'sessionHistory.settings.description',
-        'Search everything your agents have said and done, on this computer and on any paired Orca server.'
-      ),
-      icon: History,
-      searchEntries: [
-        {
-          title: translate('sessionHistory.settings.indexComputers', 'Search inside sessions'),
-          description: translate(
-            'sessionHistory.settings.searchDescription',
-            'Turn on session search for this computer and paired servers, or clear search data.'
-          )
-        }
-      ],
-      group: 'workflows'
-    },
-    {
-      id: 'git',
-      title: translate(
-        'auto.hooks.useSettingsNavigationMetadata.09607cb0fe',
-        'Git & Source Control'
-      ),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.ab4b21b58e',
-        'Branch naming, base refs, and Git AI Author.'
-      ),
-      icon: GitBranch,
-      // Why: Git AI Author is rendered inside Git, so shared
-      // metadata must search both surfaces wherever Git appears.
-      searchEntries: [
-        ...getGitPaneSearchEntries(),
-        ...getCommitMessageAiPaneSearchEntries(),
-        ...getGitProviderApiBudgetSearchEntries()
-      ],
-      group: 'workflows'
-    },
-    {
-      id: 'tasks',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.85f4fd7710', 'Task Sources'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.tasksDescription',
-        'Connect providers, install the Linear skill, and choose what appears in Tasks.'
-      ),
-      icon: ListChecks,
-      searchEntries: getTasksPaneSearchEntries(),
-      group: 'workflows'
     },
     {
       id: 'terminal',

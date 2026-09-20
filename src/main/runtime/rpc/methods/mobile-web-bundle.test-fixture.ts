@@ -83,8 +83,7 @@ export function writeSyntheticMobileWebBundle(
       runtimeProtocolVersion: 2,
       entrypoint: 'index.html',
       totalBytes: assets.reduce((total, asset) => total + asset.byteLength, 0),
-      assets,
-      routes: []
+      assets
     }),
     'utf8'
   )

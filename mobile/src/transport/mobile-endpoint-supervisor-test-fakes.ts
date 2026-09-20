@@ -5,7 +5,6 @@ import { RelayDialStageTracker, type RelayDialStage } from './relay-dial-stage'
 import { defaultCancelTimer, defaultScheduleTimer } from './timer-scheduler'
 import type { MobileEndpointSupervisorDependencies } from './mobile-endpoint-supervisor'
 import type { RpcClient } from './rpc-client'
-import type { RelayHostReachability } from './relay-host-reachability'
 import type { MobileConnectionPath, StableLogicalRpcClient } from './stable-logical-rpc-client'
 import type { ConnectionState, HostProfile, RpcResponse } from './types'
 
@@ -137,22 +136,22 @@ export class FakeLogicalClient extends FakeSession implements StableLogicalRpcCl
     }
   })
   isPairingRejected = () => this.pairingRejected
-  private relayHostReachability: RelayHostReachability = 'connecting'
-  setRelayHostReachability = vi.fn((reachability: RelayHostReachability) => {
-    if (this.relayHostReachability === reachability) {
+  private hostSignedOut = false
+  setHostSignedOut = vi.fn((signedOut: boolean) => {
+    if (this.hostSignedOut === signedOut) {
       return
     }
-    this.relayHostReachability = reachability
+    this.hostSignedOut = signedOut
     for (const listener of this.pathListeners) {
       listener()
     }
   })
-  getRelayHostReachability = () => this.relayHostReachability
+  isHostSignedOut = () => this.hostSignedOut
   // Mirrors LogicalClientConnectionPath.clearAfterConnected.
   publishState(state: ConnectionState): void {
     if (state === 'connected') {
       this.pairingRejected = false
-      this.relayHostReachability = 'connecting'
+      this.hostSignedOut = false
     }
     super.publishState(state)
   }
