@@ -1,5 +1,5 @@
 import type React from 'react'
-import { ClaudeIcon, DroidIcon, OpenAIIcon } from '@/components/status-bar/icons'
+import { ClaudeIcon, CodeBuddyIcon, DroidIcon, OpenAIIcon } from '@/components/status-bar/icons'
 import openClaudeLogoUrl from '../../../../resources/openclaude-logo.png?url'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import { getTuiAgentLaunchCommand, TUI_AGENT_CONFIG } from '../../../shared/tui-agent-config'
@@ -347,6 +347,9 @@ export function AgentIcon({
   }
   if (agent === 'droid') {
     return <DroidIcon size={size} />
+  }
+  if (agent === 'codebuddy') {
+    return <CodeBuddyIcon size={size} />
   }
   if (agent === 'pi') {
     return <PiIcon size={size} />
