@@ -1,3 +1,4 @@
+import { inheritOmpLaunchEnvironment } from '../host-env/omp-launch-environment'
 import { getAppEnvironment } from '../../../../shared/app-environment'
 import type { OrcaRuntimeService } from '../../../runtime/orca-runtime'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
@@ -20,14 +21,12 @@ import type { GetSelectedCodexHomePath } from '../host-env/types'
 import { isCurrentPtyExit, ptyOwnership } from './ownership-state'
 import { localProvider } from './registry'
 import { clearProviderPtyState } from './state-cleanup'
-import type { LocalProviderStore } from '../../../local-providers/service'
-import { buildEnabledLocalProviderEnvironment } from '../../../local-providers/local-provider-session-environment'
+import { awaitExplicitPiOmpGuestReadiness } from '../../../agent-hooks/wsl-pi-omp-guest-readiness'
 
 export function configureLocalPtyProvider(args: {
   runtime?: OrcaRuntimeService
   getSettings?: () => GlobalSettings
   getSelectedCodexHomePath?: GetSelectedCodexHomePath
-  store?: LocalProviderStore
   trustedTerminalHandleEnv: Set<string>
 }): void {
   // Why: only LocalPtyProvider needs main-process hook injection; daemon-backed providers spawn subprocesses internally.
@@ -58,6 +57,20 @@ export function configureLocalPtyProvider(args: {
       )
       const skipCodexHomeEnv = ctx?.isWsl === true && !selectedCodexHomePath
       const ptySettings = getSettings?.()
+      await inheritOmpLaunchEnvironment(baseEnv, {
+        shellPath: ctx?.shellPath,
+        explicitEnv: ctx?.explicitEnv,
+        isWsl: ctx?.isWsl,
+        launchAgent: ctx?.launchAgent,
+        launchCommand: ctx?.command
+      })
+      await awaitExplicitPiOmpGuestReadiness({
+        isWsl: ctx?.isWsl === true,
+        distro: ctx?.wslDistro,
+        codexHomePath: selectedCodexHomePath,
+        launchAgent: ctx?.launchAgent,
+        launchCommand: ctx?.command
+      })
       const env = buildPtyHostEnv(id, baseEnv, {
         isPackaged: getAppEnvironment().isPackaged(),
         resourcesPath: process.resourcesPath,
@@ -75,44 +88,32 @@ export function configureLocalPtyProvider(args: {
         isWsl: ctx?.isWsl,
         wslDistro: ctx?.wslDistro ?? null,
         agentStatusHooksEnabled: isAgentStatusHooksEnabled(ptySettings),
+        disabledTuiAgents: ptySettings?.disabledTuiAgents,
         codexStatusHooksEnabled: isCodexStatusHooksEnabled(ptySettings),
         networkProxySettings: ptySettings,
         routeBrowserOpensToClient: runtime?.shouldRelayTerminalBrowserOpens?.()
       })
       // Why: agents need their terminal handle at process start to self-identify in orchestration messages without an extra RPC.
-      const providerEnv = buildEnabledLocalProviderEnvironment({
-        store: args.store,
-        launchAgent: ctx?.launchAgent,
-        command: ctx?.command,
-        baseEnv: env,
-        configDirs: ptySettings
-          ? {
-              claudeConfigDir: ptySettings.claudeConfigDir ?? null,
-              codexConfigDir: ptySettings.codexConfigDir ?? null
-            }
-          : undefined
-      })
-      const finalEnv = providerEnv
-      const requestedHandle = finalEnv.ORCA_TERMINAL_HANDLE
+      const requestedHandle = baseEnv.ORCA_TERMINAL_HANDLE
       const preAllocatedHandle =
         requestedHandle && trustedTerminalHandleEnv.has(requestedHandle)
           ? requestedHandle
           : runtime?.preAllocateHandleForPty(id)
       if (requestedHandle && requestedHandle !== preAllocatedHandle) {
-        delete finalEnv.ORCA_TERMINAL_HANDLE
+        delete env.ORCA_TERMINAL_HANDLE
       }
       if (preAllocatedHandle) {
-        finalEnv.ORCA_TERMINAL_HANDLE = preAllocatedHandle
+        env.ORCA_TERMINAL_HANDLE = preAllocatedHandle
       }
       stampWslOrchestrationCompatibilityHost(
-        finalEnv,
+        env,
         runtime?.getOrchestrationCompatibilityHostId?.(),
         ctx?.isWsl === true ? ctx.wslDistro : null
       )
       if (ctx?.isWsl === true) {
-        addOrcaWslInteropEnv(finalEnv)
+        addOrcaWslInteropEnv(env)
       }
-      return finalEnv
+      return env
     },
     onSpawned: (id, incarnationId) => runtime?.onPtySpawned(id, incarnationId),
     onExit: (id, code, incarnationId, cause) => {

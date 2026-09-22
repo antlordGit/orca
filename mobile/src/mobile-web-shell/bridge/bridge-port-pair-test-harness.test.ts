@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { RpcClient } from '../../transport/rpc-client'
 import type { RpcResponse } from '../../transport/types'
 import { createBridgePortPair, createFakeBridgePortPair } from './bridge-port-pair-test-harness'
+import { BRIDGE_ROUTE_PARAM_CLEAR } from './bridge-route-update'
 
 /** Every member of the contract, none of them a fake anything: the pair must carry a plain client. */
 function plainShellClient(record: string[]): RpcClient {
@@ -33,9 +34,15 @@ describe('the bridge port pair', () => {
       sessionId: 'session-a',
       buildId: 'build-a',
       grants: expect.anything(),
-      // The screen the shell says this page stands in for; the pair names one so the session it
-      // hands back is the shape a page on a route actually holds.
-      route: expect.objectContaining({ pathname: expect.any(String) })
+      // The screen the shell says this page stands in for, and the routes it keeps for itself; the
+      // pair names both so the session it hands back is the shape a page on a route actually holds.
+      route: expect.objectContaining({ pathname: expect.any(String) }),
+      pageRoutes: expect.any(Array),
+      pageRouteGrants: null,
+      host: expect.objectContaining({ id: expect.any(String) }),
+      storage: expect.any(Object),
+      storageOversize: [],
+      accepts: [BRIDGE_ROUTE_PARAM_CLEAR]
     })
   })
 

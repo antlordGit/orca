@@ -17,13 +17,17 @@ import {
   BRIDGE_MAX_ROUTE_PARAMS,
   BRIDGE_MAX_ROUTE_PATHNAME_CHARS,
   BRIDGE_MAX_VIEWPORT_COLS,
-  BRIDGE_MAX_VIEWPORT_ROWS
+  BRIDGE_MAX_VIEWPORT_ROWS,
+  BRIDGE_ROUTE_HREF_PATTERN,
+  BRIDGE_ROUTE_PATHNAME_PATTERN
 } from './bridge-caps'
+import { BRIDGE_HAPTICS_KINDS, BRIDGE_HAPTICS_NOTIFY } from './bridge-haptics-notify'
 import {
   BRIDGE_BINARY_FORMATS,
   BRIDGE_CONNECTION_STATES,
   BRIDGE_FAULT_GRANT,
   BRIDGE_FOREGROUND_NUDGE_REASONS,
+  BRIDGE_NAVIGATE_BACK_NOTIFY,
   BRIDGE_PROTOCOL_VERSION,
   readBridgeClientMessage,
   readBridgeHostMessage,
@@ -126,6 +130,13 @@ describe('client messages', () => {
         error: { category: 'Error', message: 'the route threw', isRpcDeliveryUnknown: false }
       }
     ],
+    ['a navigate-back notify', { type: 'notify', name: BRIDGE_NAVIGATE_BACK_NOTIFY }],
+    // One per kind, spread from the list itself: a kind added to the tuple and left out of the
+    // schema's enum would otherwise be accepted here by a case nobody wrote.
+    ...BRIDGE_HAPTICS_KINDS.map(
+      (kind) =>
+        [`a ${kind} haptics notify`, { type: 'notify', name: BRIDGE_HAPTICS_NOTIFY, kind }] as const
+    ),
     ['close', { type: 'close' }]
   ] as const
 
@@ -134,6 +145,22 @@ describe('client messages', () => {
       expect(readClient(client(fields)).ok).toBe(true)
     })
   }
+
+  it('drops a target a page attached to a navigate-back, rather than carrying it to the shell', () => {
+    // Additive fields are dropped and never refused, which is what keeps a newer desktop's bundle
+    // working against an older shell — so the absence has to be read off the parsed frame.
+    const read = readClient(
+      client({ type: 'notify', name: BRIDGE_NAVIGATE_BACK_NOTIFY, href: '/h/host-a' })
+    )
+    expect(read).toEqual({
+      ok: true,
+      message: {
+        v: BRIDGE_PROTOCOL_VERSION,
+        type: 'notify',
+        name: BRIDGE_NAVIGATE_BACK_NOTIFY
+      }
+    })
+  })
 
   const refused = [
     ['a version this shell does not speak', { ...client({ type: 'ready' }), v: 2 }],
@@ -179,6 +206,11 @@ describe('client messages', () => {
       'a page fault whose error is not a capture',
       client({ type: 'notify', name: BRIDGE_FAULT_GRANT, error: 'the route threw' })
     ],
+    [
+      'a haptic this app has no function for',
+      client({ type: 'notify', name: BRIDGE_HAPTICS_NOTIFY, kind: 'heavyImpact' })
+    ],
+    ['a haptics notify naming no kind', client({ type: 'notify', name: BRIDGE_HAPTICS_NOTIFY })],
     ['a bare array', []],
     ['a bare string', 'ready']
   ] as const
@@ -660,5 +692,34 @@ describe('the readers bound their two directions differently', () => {
     })
     expect(raw.length).toBeGreaterThan(BRIDGE_MAX_MESSAGE_BYTES)
     expect(readBridgeHostMessage(raw)).toEqual({ ok: false, refusal: 'oversized' })
+  })
+})
+
+/**
+ * One rule, two patterns.
+ *
+ * The screen the shell names and the screen a page asks for are the same vocabulary, and a spelling
+ * one refuses while the other takes is a hole with a `notify` already pointed at it.
+ */
+describe('the segment rule both route patterns are built from', () => {
+  it('refuses a dot segment in either position, however it is spelled', () => {
+    for (const spelling of ['/h/../a', '/h/%2e%2e/a', '/h/%2E%2E/a', '/h/.%2e/a', '/h/%2e/a']) {
+      expect(BRIDGE_ROUTE_PATHNAME_PATTERN.test(spelling), spelling).toBe(false)
+      expect(BRIDGE_ROUTE_HREF_PATTERN.test(spelling), spelling).toBe(false)
+    }
+  })
+
+  it('refuses a trailing dot segment the query is what ends, not a slash', () => {
+    // The `notify` sink is `router.push`, which does not resolve these: it matches segments
+    // literally, so `..` becomes the `[hostId]` a screen is opened for. A different wrong screen
+    // from the spellings above, and the same reason one rule covers both patterns.
+    for (const spelling of ['/h/..?x', '/h/%2e%2e?x', '/h/.?x', '/h/a/..?x', '/h/..?']) {
+      expect(BRIDGE_ROUTE_HREF_PATTERN.test(spelling), spelling).toBe(false)
+    }
+  })
+
+  it('takes an escape that is part of a name, in either position', () => {
+    expect(BRIDGE_ROUTE_PATHNAME_PATTERN.test('/h/a%20b/%2ex/a%2fb')).toBe(true)
+    expect(BRIDGE_ROUTE_HREF_PATTERN.test('/h/a%20b/%2ex?from=list')).toBe(true)
   })
 })

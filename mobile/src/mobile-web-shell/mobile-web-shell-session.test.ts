@@ -1,122 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { MOBILE_WEB_BUNDLE_CAPABILITY } from '../../../src/shared/mobile-web-bundle/mobile-web-bundle-capability'
 import {
   createMobileWebShellSession,
-  reduceMobileWebShellSession
-} from './mobile-web-shell-session'
-import type {
-  CachedGeneration,
-  MobileWebShellGates,
-  MobileWebShellManifestFacts,
-  MobileWebShellSession,
-  MobileWebShellSessionEvent,
-  MobileWebShellStep
-} from './mobile-web-shell-session-contract'
-
-function gates(overrides: Partial<MobileWebShellGates> = {}): MobileWebShellGates {
-  return {
-    statusPending: false,
-    statusReadable: true,
-    reachability: 'connected',
-    hostCapabilities: [MOBILE_WEB_BUNDLE_CAPABILITY],
-    hostStatus: { protocolVersion: 10, minCompatibleMobileVersion: 1 },
-    ...overrides
-  }
-}
-
-const MANIFEST: MobileWebShellManifestFacts = {
-  buildId: 'b'.repeat(64),
-  schemaVersion: 1,
-  runtimeProtocolVersion: 5,
-  minCompatibleRuntimeProtocolVersion: 2,
-  totalBytes: 4096,
-  totalAssets: 4
-}
-
-const CACHED: CachedGeneration = {
-  buildId: MANIFEST.buildId,
-  directory: '/cache/mobile-web/host/generations/b',
-  totalBytes: 4096
-}
-
-/** An event as a test writes it. An effect result is stamped with the flow the session is on, which
- *  is what an in-order runner does; a test replaying a superseded run pins the flow itself. */
-type PendingEvent<E = MobileWebShellSessionEvent> = E extends { flow: number }
-  ? Omit<E, 'flow'> & { readonly flow?: number }
-  : E
-
-function stamp(flow: number, event: PendingEvent): MobileWebShellSessionEvent {
-  switch (event.type) {
-    case 'gates-changed':
-    case 'shell-failed':
-    case 'retry-pressed':
-    case 'document-loaded':
-    case 'page-ready':
-      return event
-    case 'cache-read':
-    case 'manifest-read':
-    case 'fetch-progress':
-    case 'download-staged':
-    case 'activated':
-    case 'remounted':
-    case 'download-failed':
-    case 'page-ready-deadline':
-      return { ...event, flow: event.flow ?? flow }
-  }
-}
-
-function run(
-  session: MobileWebShellSession,
-  ...events: readonly PendingEvent[]
-): MobileWebShellStep {
-  let step: MobileWebShellStep = { session, effects: [] }
-  for (const event of events) {
-    step = reduceMobileWebShellSession(step.session, stamp(step.session.flow, event))
-  }
-  return step
-}
-
-function started(overrides: Partial<MobileWebShellGates> = {}): MobileWebShellStep {
-  return run(createMobileWebShellSession(), { type: 'gates-changed', gates: gates(overrides) })
-}
-
-/** Connected, capability present, cache read, manifest in flight. */
-function afterCacheRead(generation: CachedGeneration | null): MobileWebShellStep {
-  return run(started().session, { type: 'cache-read', generation })
-}
-
-function readySession(): MobileWebShellStep {
-  return run(
-    afterCacheRead(CACHED).session,
-    { type: 'manifest-read', manifest: MANIFEST },
-    {
-      type: 'activated',
-      generationDirectory: CACHED.directory,
-      sessionId: 'session-one',
-      buildId: MANIFEST.buildId,
-      totalBytes: MANIFEST.totalBytes,
-      elapsedMs: 12
-    }
-  )
-}
-
-/** The second half of a recovery: the refetch the delete queued, through to a mounted view. */
-function readyAgain(session: MobileWebShellSession, sessionId: string): MobileWebShellStep {
-  return run(
-    session,
-    { type: 'cache-read', generation: null },
-    { type: 'manifest-read', manifest: MANIFEST },
-    { type: 'download-staged' },
-    {
-      type: 'activated',
-      generationDirectory: '/cache/gen',
-      sessionId,
-      buildId: MANIFEST.buildId,
-      totalBytes: MANIFEST.totalBytes,
-      elapsedMs: 7
-    }
-  )
-}
+  readyAgain,
+  CACHED,
+  MANIFEST,
+  ROUTE,
+  afterCacheRead,
+  gates,
+  readySession,
+  run,
+  started
+} from './mobile-web-shell-session-test-fixtures'
 
 describe('the gates decide whether a step is taken at all', () => {
   it('waits while a connection is still being made', () => {
@@ -148,12 +42,11 @@ describe('the gates decide whether a step is taken at all', () => {
     expect(step.effects).toEqual([{ kind: 'open-cache' }])
   })
 
-  it('walls a readable host that serves no bundle', () => {
+  it('leaves the route native for a readable host that serves no bundle', () => {
+    // Not a wall: a wall says the workspace cannot be opened, and a desktop with no bundle declares
+    // no page route, so there is nothing to open and the native screen is where this already was.
     const step = started({ hostCapabilities: [] })
-    expect(step.session.state).toEqual({
-      kind: 'wall',
-      verdict: { kind: 'blocked', reason: 'bundle-unavailable' }
-    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
     expect(step.effects).toEqual([])
   })
 
@@ -167,6 +60,16 @@ describe('the gates decide whether a step is taken at all', () => {
 })
 
 describe('the offline rule', () => {
+  it('leaves an unreachable host native when its cached bundle lists no such route', () => {
+    const offline = started({ reachability: 'unreachable' })
+    const step = run(offline.session, {
+      type: 'cache-read',
+      generation: { ...CACHED, routes: [] }
+    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
+    expect(step.effects).toEqual([])
+  })
+
   it('opens a cached generation with no compat check when the host is unreachable', () => {
     const start = started({ reachability: 'unreachable', hostCapabilities: [] })
     const step = run(start.session, { type: 'cache-read', generation: CACHED })
@@ -258,6 +161,61 @@ describe('the connected flow', () => {
   it('downloads when there is no cache at all', () => {
     const step = run(afterCacheRead(null).session, { type: 'manifest-read', manifest: MANIFEST })
     expect(step.effects).toEqual([{ kind: 'download' }])
+  })
+
+  it('downloads nothing for a route the bundle does not list', () => {
+    const step = run(afterCacheRead(null).session, {
+      type: 'manifest-read',
+      manifest: { ...MANIFEST, routes: [{ pathname: '/h/[hostId]/tasks', grants: [] }] }
+    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
+    expect(step.effects).toEqual([])
+  })
+
+  it('downloads nothing for a route listed with a grant this shell does not implement', () => {
+    const step = run(afterCacheRead(null).session, {
+      type: 'manifest-read',
+      manifest: {
+        ...MANIFEST,
+        routes: [{ pathname: '/h/[hostId]', grants: ['navigate', 'teleport'] }]
+      }
+    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
+    expect(step.effects).toEqual([])
+  })
+
+  it('leaves the route native for a desktop older than the field itself', () => {
+    const step = run(afterCacheRead(null).session, {
+      type: 'manifest-read',
+      manifest: { ...MANIFEST, routes: undefined }
+    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
+  })
+
+  it('answers the route before it answers the wall, since a native route has none to show', () => {
+    // A bundle this shell cannot open is not a reason to refuse a screen it was never going to
+    // open: the wall belongs to the page, and this route is the native screen's.
+    const step = run(afterCacheRead(null).session, {
+      type: 'manifest-read',
+      manifest: { ...MANIFEST, schemaVersion: 99, routes: [] }
+    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
+  })
+
+  it('still walls a listed route whose bundle this shell cannot read', () => {
+    const step = run(afterCacheRead(null).session, {
+      type: 'manifest-read',
+      manifest: { ...MANIFEST, schemaVersion: 99 }
+    })
+    expect(step.session.state).toMatchObject({
+      kind: 'wall',
+      verdict: { reason: 'bundle-shell-too-old' }
+    })
+  })
+
+  it('tells the page which routes it may keep, so it hands the rest back', () => {
+    const step = run(afterCacheRead(null).session, { type: 'manifest-read', manifest: MANIFEST })
+    expect(step.session.pageRoutes).toEqual(['/h/[hostId]'])
   })
 
   it('carries download progress and then stages and activates', () => {
@@ -428,16 +386,14 @@ describe('recovery follows the shell view contract', () => {
     expect(rearmed.effects).toEqual([{ kind: 'open-cache' }])
   })
 
-  it('still walls a recovery whose host readably serves no bundle', () => {
+  it('hands a recovery back to the native screen when the host serves no bundle', () => {
     const stale = run(readySession().session, {
       type: 'gates-changed',
       gates: gates({ hostCapabilities: [] })
     })
     const step = run(stale.session, { type: 'shell-failed', reason: 'document-load-failed' })
-    expect(step.session.state).toEqual({
-      kind: 'wall',
-      verdict: { kind: 'blocked', reason: 'bundle-unavailable' }
-    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
+    // The cache still goes: the bytes that failed are suspect whatever screen follows them.
     expect(step.effects).toEqual([{ kind: 'delete-cache' }])
   })
 
@@ -542,15 +498,15 @@ describe('try again', () => {
     expect(again.effects).toEqual([{ kind: 'delete-cache' }, { kind: 'open-cache' }])
   })
 
-  it('walls again rather than looping when the host still serves no bundle', () => {
-    const wall = started({ hostCapabilities: [] })
-    const retried = run(wall.session, { type: 'retry-pressed' })
-    expect(retried.session.state).toMatchObject({ kind: 'wall' })
+  it('stays native rather than looping when the host still serves no bundle', () => {
+    const native = started({ hostCapabilities: [] })
+    const retried = run(native.session, { type: 'retry-pressed' })
+    expect(retried.session.state).toEqual({ kind: 'native-route' })
     expect(retried.effects).toEqual([])
   })
 
   it('does nothing but reset when no gates have arrived yet', () => {
-    const step = run(createMobileWebShellSession(), { type: 'retry-pressed' })
+    const step = run(createMobileWebShellSession(ROUTE), { type: 'retry-pressed' })
     expect(step.session.state).toEqual({ kind: 'checking' })
     expect(step.effects).toEqual([])
   })
@@ -706,16 +662,13 @@ describe('a gates change that says nothing new starts nothing', () => {
     expect(settled.effects).toEqual([{ kind: 'open-cache' }])
   })
 
-  it('walls a check in flight the moment the host stops serving a bundle', () => {
+  it('drops a check in flight to the native screen when the host stops serving a bundle', () => {
     const checking = started()
     const step = run(checking.session, {
       type: 'gates-changed',
       gates: gates({ hostCapabilities: [] })
     })
-    expect(step.session.state).toEqual({
-      kind: 'wall',
-      verdict: { kind: 'blocked', reason: 'bundle-unavailable' }
-    })
+    expect(step.session.state).toEqual({ kind: 'native-route' })
   })
 })
 

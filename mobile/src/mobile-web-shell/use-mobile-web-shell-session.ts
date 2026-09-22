@@ -2,16 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MobileWebShellFailureReason } from '../../modules/orca-mobile-web-shell/src/load-state'
 import { useHostProtocolGates } from '../components/HostProtocolGate'
 import { useHostClient } from '../transport/client-context'
-import { fetchMobileWebBundle } from '../transport/mobile-web-bundle-fetch'
-import {
-  isMobileWebBundleTransportFailure,
-  mobileWebBundleManifestRead
-} from '../transport/mobile-web-bundle-operations'
-import { runRpcOperation } from '../transport/rpc-operation'
-import type { RpcClient } from '../transport/rpc-client'
 import type { GenerationStore } from './generation-store'
-import { generationDirectoryPath } from './generation-store-file-system'
 import { deriveHostCacheKey } from './host-cache-key'
+import { download, openCache, readManifest } from './mobile-web-shell-session-effects'
 import {
   createMobileWebShellRuntime,
   PAGE_READY_DEADLINE_MS,
@@ -23,7 +16,6 @@ import {
   reduceMobileWebShellSession
 } from './mobile-web-shell-session'
 import type {
-  MobileWebShellReadFailure,
   MobileWebShellSessionEffect,
   MobileWebShellSessionEvent,
   MobileWebShellSessionState
@@ -31,6 +23,10 @@ import type {
 
 export type MobileWebShellSessionView = {
   readonly state: MobileWebShellSessionState
+  /** The route patterns this shell would render from the page, for the page to be told about. */
+  readonly pageRoutes: readonly string[]
+  readonly pageRouteGrants: readonly { pathname: string; grants: readonly string[] }[]
+  readonly routeGrants: readonly string[]
   readonly retry: () => void
   /** B3's failure reasons, forwarded verbatim; the reducer owns what each one means. */
   readonly reportShellFailure: (reason: MobileWebShellFailureReason) => void
@@ -38,6 +34,13 @@ export type MobileWebShellSessionView = {
   readonly reportDocumentLoaded: () => void
   /** The page spoke over the bridge; ends that wait, whichever of the two arrived first. */
   readonly reportPageReady: () => void
+  /**
+   * Whether the page has handshaken on this session, which the bridge host is rebuilt against.
+   *
+   * Projected into state beside `state` rather than read off the ref while rendering: a
+   * `page-ready` changes nothing else, so no other value would re-render to carry it out.
+   */
+  readonly pageReady: boolean
 }
 
 /**
@@ -49,9 +52,11 @@ export type MobileWebShellSessionView = {
  */
 export function useMobileWebShellSession(args: {
   hostId: string
+  /** The route this mount stands for, matched against the page routes the bundle declares. */
+  routePathname: string
   runtime?: MobileWebShellRuntime
 }): MobileWebShellSessionView {
-  const { hostId } = args
+  const { hostId, routePathname } = args
   const gates = useHostProtocolGates()
   const { client, state: connState } = useHostClient(hostId)
 
@@ -61,8 +66,9 @@ export function useMobileWebShellSession(args: {
   const storeRef = useRef<GenerationStore | null>(null)
   storeRef.current ??= runtime.createStore()
 
-  const sessionRef = useRef(createMobileWebShellSession())
+  const sessionRef = useRef(createMobileWebShellSession(routePathname))
   const [state, setState] = useState(sessionRef.current.state)
+  const [pageReady, setPageReady] = useState(sessionRef.current.pageReady)
   const hostKey = useMemo(() => deriveHostCacheKey(hostId), [hostId])
   const startedAtRef = useRef(runtime.now())
   // Bumped by anything that invalidates work in flight; every dispatch out of an effect checks it.
@@ -83,6 +89,7 @@ export function useMobileWebShellSession(args: {
     const stepped = reduceMobileWebShellSession(sessionRef.current, event)
     sessionRef.current = stepped.session
     setState(stepped.session.state)
+    setPageReady(stepped.session.pageReady)
     for (const effect of stepped.effects) {
       // Every effect of a step belongs to the flow that step produced, and its result carries that
       // number back, so a flow the session has since restarted reports into nothing.
@@ -171,11 +178,12 @@ export function useMobileWebShellSession(args: {
   useEffect(() => {
     // A new host is a new session: the old one's latches, cache handle and in-flight work all go.
     invalidate()
-    sessionRef.current = createMobileWebShellSession()
+    sessionRef.current = createMobileWebShellSession(routePathname)
     startedAtRef.current = runtime.now()
     setState(sessionRef.current.state)
+    setPageReady(sessionRef.current.pageReady)
     return invalidate
-  }, [hostId, invalidate, runtime])
+  }, [hostId, invalidate, routePathname, runtime])
 
   const { statusPending, statusReadable, hostCapabilities, hostProtocolWindow } = gates
   const reachability = readMobileWebShellReachability(connState, client)
@@ -190,15 +198,16 @@ export function useMobileWebShellSession(args: {
         hostStatus: hostProtocolWindow
       }
     })
-    // `hostId` is in the list for the host whose gates read identically to the last one's: the
-    // reducer now starts nothing on a repeat verdict, so a session that never re-armed would sit
-    // in `checking` forever.
+    // `hostId` and `routePathname` are in the list because they are what rebuilds the session
+    // above: the reducer starts nothing on a repeat verdict, so a fresh session nobody re-armed
+    // would sit in `checking` forever. Both, not just the host, because either one rebuilds it.
   }, [
     dispatch,
     hostCapabilities,
     hostId,
     hostProtocolWindow,
     reachability,
+    routePathname,
     statusPending,
     statusReadable
   ])
@@ -225,119 +234,15 @@ export function useMobileWebShellSession(args: {
     dispatch(epochRef.current, { type: 'page-ready' })
   }, [dispatch])
 
-  return { state, retry, reportShellFailure, reportDocumentLoaded, reportPageReady }
-}
-
-async function openCache(
-  store: GenerationStore,
-  hostKey: string
-): Promise<{ buildId: string; directory: string; totalBytes: number } | null> {
-  try {
-    // Here and nowhere earlier: with the flag off no code path reaches this hook, so a store build
-    // never sweeps a cache it never wrote.
-    await store.sweepStagedGenerations()
-    const active = await store.readActiveGeneration(hostKey)
-    return active === null
-      ? null
-      : {
-          buildId: active.buildId,
-          directory: generationDirectoryPath(active.directory),
-          totalBytes: active.manifest.totalBytes
-        }
-  } catch {
-    // A cache that cannot be read is not a cache that is wrong: nothing is deleted, and the flow
-    // treats it as absent, which downloads when connected and says so when not.
-    return null
-  }
-}
-
-/** A rejection the link caused says nothing about the bundle, and the reducer opens the cache on it
- *  rather than telling a phone that already holds a workspace it could not be downloaded. */
-function readFailure(error: unknown): MobileWebShellReadFailure {
-  return isMobileWebBundleTransportFailure(error) ? 'transport' : 'bundle'
-}
-
-async function readManifest(
-  client: RpcClient | null,
-  flow: number,
-  send: (event: MobileWebShellSessionEvent) => void
-): Promise<void> {
-  if (client === null) {
-    // No client is no link, and the gates are about to say so.
-    send({ type: 'download-failed', flow, failure: 'transport' })
-    return
-  }
-  try {
-    const opened = await runRpcOperation(client, mobileWebBundleManifestRead, null)
-    const manifest = opened.manifest
-    send({
-      type: 'manifest-read',
-      flow,
-      manifest: {
-        buildId: manifest.buildId,
-        schemaVersion: manifest.schemaVersion,
-        runtimeProtocolVersion: manifest.runtimeProtocolVersion,
-        minCompatibleRuntimeProtocolVersion: manifest.minCompatibleRuntimeProtocolVersion,
-        totalBytes: manifest.totalBytes,
-        totalAssets: manifest.assets.length
-      }
-    })
-  } catch (error) {
-    send({ type: 'download-failed', flow, failure: readFailure(error) })
-  }
-}
-
-async function download(args: {
-  client: RpcClient | null
-  store: GenerationStore
-  hostKey: string
-  flow: number
-  runtime: MobileWebShellRuntime
-  startedAt: number
-  downloads: Set<AbortController>
-  send: (event: MobileWebShellSessionEvent) => void
-}): Promise<void> {
-  const { client, store, hostKey, flow, runtime, send } = args
-  if (client === null) {
-    send({ type: 'download-failed', flow, failure: 'transport' })
-    return
-  }
-  const controller = new AbortController()
-  args.downloads.add(controller)
-  try {
-    const fetched = await fetchMobileWebBundle({
-      client,
-      signal: controller.signal,
-      onProgress: (progress) => send({ type: 'fetch-progress', flow, ...progress })
-    })
-    // The bytes are in; the session they were for may not be. The fetch throws on an abort it sees,
-    // but an abort landing between its last read and this line would otherwise still write a
-    // generation for a host screen nobody is on any more.
-    if (controller.signal.aborted) {
-      return
-    }
-    send({ type: 'download-staged', flow })
-    const staged = await store.stageGeneration(hostKey, fetched)
-    // Again before the commit, because the commit is the write that is not the staging tree's to
-    // undo: it renames into the active slot and moves the host index. An abort that landed while
-    // the bytes were being staged takes the staged tree back out instead.
-    if (controller.signal.aborted) {
-      await store.abortStagedGeneration(staged).catch(() => undefined)
-      return
-    }
-    const committed = await store.commitGeneration(staged)
-    send({
-      type: 'activated',
-      flow,
-      generationDirectory: generationDirectoryPath(committed.directory),
-      sessionId: runtime.mintSessionId(),
-      buildId: committed.buildId,
-      totalBytes: committed.manifest.totalBytes,
-      elapsedMs: runtime.now() - args.startedAt
-    })
-  } catch (error) {
-    send({ type: 'download-failed', flow, failure: readFailure(error) })
-  } finally {
-    args.downloads.delete(controller)
+  return {
+    state,
+    pageReady,
+    pageRoutes: sessionRef.current.pageRoutes,
+    pageRouteGrants: sessionRef.current.pageRouteGrants,
+    routeGrants: sessionRef.current.routeGrants,
+    retry,
+    reportShellFailure,
+    reportDocumentLoaded,
+    reportPageReady
   }
 }

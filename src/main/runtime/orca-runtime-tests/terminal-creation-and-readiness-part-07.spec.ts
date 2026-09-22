@@ -2,8 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   AGENT_PROMPT_BRACKETED_PASTE_END,
   AGENT_PROMPT_BRACKETED_PASTE_START,
-  buildAgentPromptPasteBytes,
-  getAgentPromptSubmitDelayMs
+  resolveAgentPromptSubmitDelayForAgent
 } from '../../../shared/agent-prompt-injection'
 import { TUI_AGENT_CONFIG } from '../../../shared/tui-agent-config'
 import type { TuiAgent } from '../../../shared/tui-agent'
@@ -606,9 +605,13 @@ describe('OrcaRuntimeService', () => {
         launchAgent: agent
       })
 
-      const submitDelayMs = getAgentPromptSubmitDelayMs(
+      // The agent's own policy, not the byte-only delay: antigravity adds a per-line settle
+      // (#21665), and advancing fake timers by less than the policy waits leaves the submit
+      // pending until the real 30 s timeout.
+      const submitDelayMs = resolveAgentPromptSubmitDelayForAgent(
         process.platform,
-        Buffer.byteLength(buildAgentPromptPasteBytes('review this change'), 'utf8')
+        'review this change',
+        agent
       )
       const sendPromise = runtime.sendTerminalAgentPrompt(handle, 'review this change')
       await vi.advanceTimersByTimeAsync(submitDelayMs - 1)

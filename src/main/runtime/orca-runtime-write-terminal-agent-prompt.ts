@@ -11,7 +11,8 @@ import { agentSessionPtyWriteGate } from './agent-session-pty-write-gate'
 import {
   AGENT_PROMPT_SUBMIT,
   getAgentPromptSubmitDelayMs,
-  getTerminalPasteIngestMs
+  getTerminalPasteIngestMs,
+  resolveAgentPromptSubmitDelayForAgent
 } from '../../shared/agent-prompt-injection'
 import type { AgentPromptWaitTextCache } from './agent-prompt-submission-verification'
 import {
@@ -66,10 +67,15 @@ export class OrcaRuntimeWithWriteTerminalAgentPrompt extends OrcaRuntimeWithReso
         renderGate.dispose()
       }
     } else {
-      await waitForAgentPromptDelay(
-        getAgentPromptSubmitDelayMs(writeHostPlatform, pasteByteLength),
-        options.signal
-      )
+      const agent = this.getPtyAgent(ptyId)
+      const submitDelayMs = options.promptForSchedule
+        ? resolveAgentPromptSubmitDelayForAgent(
+            writeHostPlatform,
+            options.promptForSchedule,
+            agent
+          )
+        : getAgentPromptSubmitDelayMs(writeHostPlatform, pasteByteLength)
+      await waitForAgentPromptDelay(submitDelayMs, options.signal)
     }
     assertAgentPromptRequestActive(options.signal)
     this.assertAgentPromptGeneration(ptyId, generation)

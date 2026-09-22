@@ -8,6 +8,7 @@ export type TuiAgent =
   | 'codebuddy' // CodeBuddy
   | 'autohand' // Autohand Code CLI
   | 'opencode' // OpenCode
+  | 'opencode2' // OpenCode 2 beta
   | 'mimo-code'
   | 'pi' // Pi (pi.dev)
   | 'omp' // OMP (omp.sh)
@@ -22,6 +23,7 @@ export type TuiAgent =
   | 'aug' // Augment/Auggie
   | 'cline' // Cline
   | 'codebuff' // Codebuff
+  | 'freebuff' // Freebuff
   | 'command-code' // Command Code
   | 'continue' // Continue
   | 'cursor' // Cursor

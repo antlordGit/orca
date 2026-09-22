@@ -1,3 +1,4 @@
+import { collectCollidingRetractionPaneKeys } from './retraction-pane-ownership'
 import type { WebSessionTabsSyncState } from './state'
 import type { applyActiveStateUpdates } from './apply-active-state'
 import { buildMirroredAgentStatusPatch } from './agent-status-patch'
@@ -16,6 +17,7 @@ export function buildWebSessionTabsFinalPatch(
   const {
     state,
     snapshot,
+    environmentId,
     worktreeId,
     now,
     batchContext,
@@ -52,11 +54,22 @@ export function buildWebSessionTabsFinalPatch(
     nextActiveTabTypeByWorktree
   } = context
 
+  // Capture ownership before the batch reducer removes rows from its mutable state.
+  const retractionPaneKeys = collectCollidingRetractionPaneKeys(
+    state,
+    removedTerminalResourceIds,
+    environmentId,
+    worktreeId,
+    batchContext
+  )
   const agentStatusPatch = buildMirroredAgentStatusPatch(
     state,
     currentTerminalTabs,
     terminalSurfaceTabs,
     mirroredTerminalTabs,
+    environmentId,
+    worktreeId,
+    new Set(isWebSessionTabsWorktreeRemovalFrame(snapshot) ? [] : removedTerminalResourceIds),
     now,
     batchContext
   )
@@ -65,10 +78,10 @@ export function buildWebSessionTabsFinalPatch(
     ? null
     : buildRetractedMirroredTabSweepPatch(
         state,
-        worktreeId,
         nextTabsByWorktree,
         agentStatusPatch,
         removedTerminalResourceIds,
+        retractionPaneKeys,
         batchContext
       )
   const remirroredClosedTabLiftPatch = buildRemirroredClosedTabMarkerLiftPatch(
