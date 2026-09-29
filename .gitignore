@@ -111,6 +111,8 @@ docs/**
 !docs/audits/plugin-uninstall-log-retirement/**
 !docs/readme/
 !docs/readme/**
+!docs/bug-reproductions/
+!docs/bug-reproductions/**
 !docs/STYLEGUIDE.md
 !docs/agent-skill-sharing-implementation-checklist.md
 !docs/mobile-terminal-shortcut-bar.md

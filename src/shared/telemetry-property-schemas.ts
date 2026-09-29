@@ -31,7 +31,6 @@ export const AGENT_KIND_VALUES = [
   'aug',
   'cline',
   'codebuff',
-  'freebuff',
   'command-code',
   'continue',
   'cursor',
@@ -47,6 +46,7 @@ export const AGENT_KIND_VALUES = [
   'devin',
   'ante',
   'trae',
+  'muse',
   'other'
 ] as const
 export const agentKindSchema = z.enum(AGENT_KIND_VALUES)

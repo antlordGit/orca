@@ -8,6 +8,9 @@ import type {
 } from '../../../../shared/native-chat-session-options'
 import { NativeChatSessionOptionPickers } from './NativeChatSessionOptionPickers'
 import { NativeChatComposerShortcuts } from './NativeChatComposerShortcuts'
+import { NativeChatComposerGoalChip } from './NativeChatComposerGoalChip'
+import { NativeChatContextUsageRing } from './NativeChatContextUsageRing'
+import type { NativeChatContextUsageSummary } from './native-chat-context-usage-summary'
 import type {
   NativeChatOptionPickerRequest,
   NativeChatPromptShortcut
@@ -35,6 +38,10 @@ export type NativeChatComposerActionsProps = {
   promptShortcuts?: readonly NativeChatPromptShortcut[]
   promptShortcutsDisabled?: boolean
   onSelectPromptShortcut?: (shortcut: NativeChatPromptShortcut) => void
+  /** Present while the composer is in goal mode; the chip calls it to leave. */
+  onExitGoalMode?: () => void
+  /** Absent until the session has reported or the transcript can estimate. */
+  contextUsage?: NativeChatContextUsageSummary | null
 }
 
 export function NativeChatComposerActions({
@@ -55,7 +62,9 @@ export function NativeChatComposerActions({
   sessionOptionsPickerRequest,
   promptShortcuts = EMPTY_PROMPT_SHORTCUTS,
   promptShortcutsDisabled = false,
-  onSelectPromptShortcut = NO_PROMPT_SHORTCUT
+  onSelectPromptShortcut = NO_PROMPT_SHORTCUT,
+  onExitGoalMode,
+  contextUsage
 }: NativeChatComposerActionsProps): React.JSX.Element {
   const handleCriticalAction = (event: React.MouseEvent<HTMLButtonElement>): void => {
     // A double-click commonly lands after the first send has started and the button has
@@ -98,16 +107,18 @@ export function NativeChatComposerActions({
           disabled={promptShortcutsDisabled}
           onSelect={onSelectPromptShortcut}
         />
+        {onExitGoalMode ? <NativeChatComposerGoalChip onExit={onExitGoalMode} /> : null}
       </div>
       <div className="ml-auto flex items-center gap-1.5">
         {/* Why: keep session controls beside the actions they affect; the
-        model trigger is ordered last so it sits directly next to dictation. */}
+        model trigger is ordered last so only the context ring separates it from dictation. */}
         <NativeChatSessionOptionPickers
           surface={sessionOptionsSurface}
           snapshot={sessionOptionsSnapshot}
           isWorking={isWorking}
           pickerRequest={sessionOptionsPickerRequest}
         />
+        {contextUsage ? <NativeChatContextUsageRing usage={contextUsage} /> : null}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

@@ -9,6 +9,7 @@ import { NATIVE_FILE_DROP_TARGET } from '../../../../shared/native-file-drop'
 import type { ComposerAutocomplete, NativeChatPickerItem } from './native-chat-composer-state'
 import { NativeChatMentionHint, NativeChatPickerMenu } from './NativeChatAutocompleteMenus'
 import { NativeChatComposerActions } from './NativeChatComposerActions'
+import type { NativeChatContextUsageSummary } from './native-chat-context-usage-summary'
 import { nativeChatComposerPlaceholder } from './native-chat-composer-target'
 import type {
   SessionOptionDescriptor,
@@ -19,6 +20,8 @@ import type {
   NativeChatPromptShortcut
 } from './native-chat-composer-types'
 import { NativeChatImageAttachmentPreview } from './NativeChatImageAttachmentPreview'
+import type { NativeChatComposerGoalMode } from './use-native-chat-composer-submit'
+import { translate } from '@/i18n/i18n'
 
 const EMPTY_PROMPT_SHORTCUTS: readonly NativeChatPromptShortcut[] = []
 const NO_PROMPT_SHORTCUT = (): void => {}
@@ -61,10 +64,12 @@ export type NativeChatComposerFieldProps = {
   onStop?: () => void
   sessionOptionsSurface: SessionOptionsSurface | null
   sessionOptionsSnapshot: SessionOptionDescriptor[]
+  contextUsage?: NativeChatContextUsageSummary | null
   sessionOptionsPickerRequest?: NativeChatOptionPickerRequest | null
   promptShortcuts?: readonly NativeChatPromptShortcut[]
   promptShortcutsDisabled?: boolean
   onSelectPromptShortcut?: (shortcut: NativeChatPromptShortcut) => void
+  goalMode?: NativeChatComposerGoalMode
 }
 
 export type NativeChatComposerImageAttachment = {
@@ -139,7 +144,9 @@ export function NativeChatComposerField({
   sessionOptionsPickerRequest,
   promptShortcuts = EMPTY_PROMPT_SHORTCUTS,
   promptShortcutsDisabled = false,
-  onSelectPromptShortcut = NO_PROMPT_SHORTCUT
+  onSelectPromptShortcut = NO_PROMPT_SHORTCUT,
+  contextUsage,
+  goalMode
 }: NativeChatComposerFieldProps): React.JSX.Element {
   // Value the IME started from, and whether a programmatic clear was dropped on top of it.
   const compositionBaseRef = useRef('')
@@ -266,7 +273,14 @@ export function NativeChatComposerField({
                   ? `${pickerListboxId}-option-${Math.min(activeSuggestion, autocomplete.items.length - 1)}`
                   : undefined
               }
-              placeholder={nativeChatComposerPlaceholder(hasPty, canSend)}
+              placeholder={
+                goalMode?.active
+                  ? translate(
+                      'components.native-chat.goal.placeholder',
+                      'Describe your goal, define measurable outcomes for best results'
+                    )
+                  : nativeChatComposerPlaceholder(hasPty, canSend)
+              }
               // Why: coarse-pointer min-height follows the app's touch target convention.
               // Editable content grows naturally; the 8lh cap (plus
               // py-1) turns further growth into internal scrolling, and scrollbar-sleek
@@ -294,10 +308,12 @@ export function NativeChatComposerField({
                 onStop={onStop}
                 sessionOptionsSurface={sessionOptionsSurface}
                 sessionOptionsSnapshot={sessionOptionsSnapshot}
+                contextUsage={contextUsage}
                 sessionOptionsPickerRequest={sessionOptionsPickerRequest}
                 promptShortcuts={promptShortcuts}
                 promptShortcutsDisabled={promptShortcutsDisabled}
                 onSelectPromptShortcut={onSelectPromptShortcut}
+                onExitGoalMode={goalMode?.active ? goalMode.exit : undefined}
               />
             </div>
           </div>

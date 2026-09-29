@@ -4,6 +4,8 @@ import {
   AGENT_PROMPT_BRACKETED_PASTE_START,
   buildAgentPromptPasteBytes,
   buildAgentPromptSubmitBytes,
+  agentPromptSubmitJoinsPasteFrame,
+  agentPromptTakesLeadLine,
   getAgentPromptSubmitDelayMs,
   getMaxTerminalPasteBytesForIngestMs,
   getTerminalPasteIngestMs,
@@ -16,10 +18,32 @@ const BEGIN = AGENT_PROMPT_BRACKETED_PASTE_START
 const END = AGENT_PROMPT_BRACKETED_PASTE_END
 
 describe('agent prompt injection bytes', () => {
+  it('joins submit only for OMP', () => {
+    expect(agentPromptSubmitJoinsPasteFrame('omp')).toBe(true)
+    expect(agentPromptSubmitJoinsPasteFrame('claude')).toBe(false)
+    expect(agentPromptSubmitJoinsPasteFrame('codex')).toBe(false)
+    expect(agentPromptSubmitJoinsPasteFrame(undefined)).toBe(false)
+  })
+
   it('always bracket-pastes prompts so agent TUIs treat newlines as content', () => {
     expect(buildAgentPromptPasteBytes('line one\nline two')).toBe(
       `${BEGIN}line one\nline two${END}`
     )
+  })
+
+  it('types the lead line only for Claude agents and unidentified ones', () => {
+    expect(agentPromptTakesLeadLine('claude')).toBe(true)
+    expect(agentPromptTakesLeadLine('claude-agent-teams')).toBe(true)
+    expect(agentPromptTakesLeadLine(null)).toBe(true)
+    expect(agentPromptTakesLeadLine('codex')).toBe(false)
+    expect(agentPromptTakesLeadLine('opencode')).toBe(false)
+  })
+
+  it('types the lead line ahead of the paste frame on one line', () => {
+    expect(buildAgentPromptPasteBytes('brief', 'Please\r\nfollow\x03\x1b[201~\x7f')).toBe(
+      `Please follow [201~  ${BEGIN}brief${END}`
+    )
+    expect(buildAgentPromptPasteBytes('brief', '')).toBe(`${BEGIN}brief${END}`)
   })
 
   it('keeps submit separate from the paste frame', () => {
