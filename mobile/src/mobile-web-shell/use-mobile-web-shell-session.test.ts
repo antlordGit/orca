@@ -41,6 +41,7 @@ const doubles = vi.hoisted((): Doubles => {
     buildId: 'b'.repeat(64),
     minCompatibleRuntimeProtocolVersion: 2,
     runtimeProtocolVersion: 5,
+    pageVersion: 1,
     entrypoint: 'index.html',
     totalBytes: 2048,
     assets: [
@@ -209,7 +210,7 @@ type Mounted = {
   /** Whether the page had spoken, as every render of the hook reported it. */
   handshakes: () => readonly boolean[]
   documentLoaded: () => void
-  pageReady: (reports?: readonly string[]) => void
+  pageReady: () => void
   timers: ReturnType<typeof createTimerSeam>
 }
 
@@ -218,7 +219,7 @@ async function mount(store: GenerationStore): Promise<Mounted> {
   const handle: {
     retry: () => void
     documentLoaded: () => void
-    pageReady: (ready: { reports: readonly string[]; accepts: readonly string[] }) => void
+    pageReady: () => void
     states: MobileWebShellSessionState[]
     handshakes: boolean[]
   } = {
@@ -260,7 +261,7 @@ async function mount(store: GenerationStore): Promise<Mounted> {
     states: () => handle.states,
     handshakes: () => handle.handshakes,
     documentLoaded: () => handle.documentLoaded(),
-    pageReady: (reports: readonly string[] = []) => handle.pageReady({ reports, accepts: [] }),
+    pageReady: () => handle.pageReady(),
     timers
   }
 }

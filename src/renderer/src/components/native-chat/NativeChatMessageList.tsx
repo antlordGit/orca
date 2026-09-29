@@ -22,12 +22,15 @@ import {
 } from './native-chat-disclosure-store'
 import { NativeChatTranscriptItems } from './NativeChatTranscriptItems'
 import type { NativeChatTranscriptRowContext } from './NativeChatTranscriptRow'
+import type { NativeChatDeliveryNotice } from './NativeChatMessageRow'
 import {
   buildNativeChatTranscriptSlots,
   nativeChatSlotIndexOf
 } from './native-chat-transcript-slots'
 import { useNativeChatTranscriptWindow } from './use-native-chat-transcript-window'
 import { useNativeChatTranscriptScroll } from './use-native-chat-transcript-scroll'
+import { useNativeChatOlderHistoryAutoload } from './use-native-chat-older-history-autoload'
+import { NativeChatOlderHistoryRow } from './NativeChatOlderHistoryRow'
 import { useNativeChatMessageRail } from './use-native-chat-message-rail'
 import { NativeChatMessageRail } from './NativeChatMessageRail'
 import type {
@@ -39,6 +42,7 @@ import { nativeChatReaderScrollInputHandlers } from './native-chat-reader-scroll
 
 import type { AgentJournalRenderItem } from '../../../../shared/agent-session-journal-types'
 import { isStructuredAgentSessionThinking } from '../../../../shared/structured-agent-session-live-turn'
+import { nativeChatSubagentLabels } from '../../../../shared/native-chat-subagent-attribution'
 import type { NativeChatSettledTurns } from '../../../../shared/native-chat-turn-status'
 import {
   nativeChatTurnDiffs,
@@ -67,7 +71,7 @@ export function NativeChatMessageList({
   allowFileUriLinks = false,
   workingStartedAt,
   settledTurns,
-  failedDeliveryMessageIds,
+  deliveryNotices,
   showTurnStatus = true,
   showLiveTurnActivity = true,
   turnActivity,
@@ -88,7 +92,7 @@ export function NativeChatMessageList({
   settledTurns?: NativeChatSettledTurns
   onLinkClick?: CommentMarkdownLinkClickHandler
   allowFileUriLinks?: boolean
-  failedDeliveryMessageIds?: ReadonlySet<string>
+  deliveryNotices?: ReadonlyMap<string, NativeChatDeliveryNotice>
   /** Turn timing and disclosure are available on structured agent sessions. */
   showTurnStatus?: boolean
   /** Whether the active turn's foreground activity row should be visible. */
@@ -129,6 +133,9 @@ export function NativeChatMessageList({
   }, [])
 
   const { hasMore, loadingEarlier, loadEarlier } = session
+  // No paging from a pending or errored read: the lane would no-op, and its recovery
+  // remounts the row, which re-checks the range.
+  const showOlderHistory = hasMore && session.readPhase === 'ready'
 
   const projectMessages = useMemo(
     () => createNativeChatMessageListProjection(),
@@ -141,6 +148,7 @@ export function NativeChatMessageList({
     // Structured sessions show goal state in the banner above the composer.
     return journalItems ? omitNativeChatThreadGoalRows(projected) : projected
   }, [journalItems, projectMessages, session.messages])
+  const subagentLabels = useMemo(() => nativeChatSubagentLabels(messages), [messages])
   const taskListPredecessors = useMemo(() => nativeChatTaskListPredecessors(messages), [messages])
   const taskListState = useMemo(() => nativeChatTaskListState(messages), [messages])
   const showTypingIndicator = showTurnStatus
@@ -195,7 +203,8 @@ export function NativeChatMessageList({
         showTurnStatus,
         expandedTurnKeys: expandedTurnIds,
         isWorking,
-        lifecycleWorking
+        lifecycleWorking,
+        subagentLabels
       }),
     [
       currentTurnKey,
@@ -206,6 +215,7 @@ export function NativeChatMessageList({
       messages,
       receipts,
       showTurnStatus,
+      subagentLabels,
       turnDiffs,
       turnKeys,
       turnStatuses
@@ -226,14 +236,19 @@ export function NativeChatMessageList({
     isWorking,
     showTypingIndicator,
     isVisible,
-    hasMore,
-    loadingEarlier,
-    loadEarlier,
     alignToViewportTop: transcriptWindow.alignToViewportTop,
     scrollToEnd: transcriptWindow.scrollToEnd,
     restoreScrollOffset: transcriptWindow.restoreScrollOffset,
     consumeProgrammaticScroll: transcriptWindow.consumeProgrammaticScroll,
     reconcileReaderScroll: transcriptWindow.reconcileReaderScroll
+  })
+  const olderHistory = useNativeChatOlderHistoryAutoload({
+    scrollRef,
+    historyKey: `${session.agent}:${session.sessionId ?? ''}:${session.olderHistoryGeneration}`,
+    isVisible,
+    hasMore: showOlderHistory,
+    loadingEarlier,
+    loadEarlier
   })
   const rail = useNativeChatMessageRail({
     scrollRef,
@@ -318,7 +333,7 @@ export function NativeChatMessageList({
       revealedDiff,
       taskListPredecessors,
       expandedTurnIds,
-      failedDeliveryMessageIds,
+      deliveryNotices,
       allowFileUriLinks,
       runtimeContext,
       onLinkClick,
@@ -330,7 +345,7 @@ export function NativeChatMessageList({
       allowFileUriLinks,
       expandSignal,
       expandedTurnIds,
-      failedDeliveryMessageIds,
+      deliveryNotices,
       onLinkClick,
       revealDiff,
       revealedDiff,
@@ -363,6 +378,12 @@ export function NativeChatMessageList({
             // window by exactly `fontScale`. (Chromium/Electron only.)
             style={{ zoom: fontScale }}
           >
+            {showOlderHistory ? (
+              <NativeChatOlderHistoryRow
+                olderHistory={olderHistory}
+                loadingEarlier={loadingEarlier}
+              />
+            ) : null}
             <div className="px-3 pt-10 pb-4 sm:px-4">
               <div
                 ref={contentRef}
@@ -370,20 +391,6 @@ export function NativeChatMessageList({
                 // on each side so content is slightly narrower than the input box.
                 className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-[5px]"
               >
-                {hasMore ? (
-                  <div className="flex justify-center py-1">
-                    <button
-                      type="button"
-                      onClick={() => void loadEarlier()}
-                      disabled={loadingEarlier}
-                      className="rounded-md px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      {loadingEarlier
-                        ? translate('components.native-chat.loadingEarlier', 'Loading…')
-                        : translate('components.native-chat.loadEarlier', 'Load earlier messages')}
-                    </button>
-                  </div>
-                ) : null}
                 <NativeChatTranscriptItems
                   slots={slots}
                   context={rowContext}
@@ -392,7 +399,7 @@ export function NativeChatMessageList({
                 {showTurnStatus && showLiveTurnActivity && isWorking ? (
                   <NativeChatTurnActivityLine
                     activity={turnActivity}
-                    status={turnStatuses.active}
+                    thinking={turnStatuses.active?.thinking === true}
                   />
                 ) : null}
                 {!showTurnStatus && showTypingIndicator ? <NativeChatTypingIndicatorRow /> : null}

@@ -8,7 +8,14 @@ import type {
 } from '../../../../shared/agent-session-conversation-command'
 import type { AgentType } from '../../../../shared/agent-status-types'
 import type { RuntimeClientTarget } from '@/runtime/runtime-rpc-client'
-import { supportsStructuredAgentSessionPromptCancel } from '@/runtime/structured-agent-session-client'
+import {
+  supportsStructuredAgentSessionPromptCancel,
+  supportsStructuredAgentSessionQuestionAnswers
+} from '@/runtime/structured-agent-session-client'
+import {
+  legacyAgentSessionSelectedOptionId,
+  type AgentSessionPromptResponse
+} from '../../../../shared/agent-session-question-answer'
 import {
   pendingStructuredSessionPrompts,
   type StructuredPromptItem
@@ -17,6 +24,7 @@ import { useStructuredAgentSessionMessages } from './use-structured-agent-sessio
 import { useStructuredAgentSessionTransportState } from './use-structured-agent-session-transport-state'
 import { useStructuredAgentSessionTransport } from './use-structured-agent-session-transport'
 import { useStructuredAgentSessionOptions } from './use-structured-agent-session-options'
+import type { StructuredAgentSessionLaunchView } from './use-native-chat-provisional-launch'
 import { useStructuredAgentSessionThreadGoal } from './use-structured-agent-session-thread-goal'
 import { useStructuredAgentSessionContextUsage } from './use-structured-agent-session-context-usage'
 import { useStructuredAgentSessionRailOutline } from './use-structured-agent-session-rail-outline'
@@ -31,9 +39,21 @@ export function useStructuredAgentSession(args: {
   agent: AgentType
   isVisible: boolean
   transportEnabled?: boolean
+  /** The host has published the session but its provider has not answered startup yet. */
+  providerStarting?: boolean
+  /** This view started the session; only then does the stored selection name what it runs. */
+  launch?: StructuredAgentSessionLaunchView
 }) {
-  const { agent, isVisible, sessionId, target, transportEnabled = true } = args
-  const { state, loadingOlder, loadOlder, mutate, writeError, providerVisible } =
+  const {
+    agent,
+    isVisible,
+    launch,
+    providerStarting = false,
+    sessionId,
+    target,
+    transportEnabled = true
+  } = args
+  const { state, loadingOlder, olderHistoryGeneration, loadOlder, mutate, write, providerVisible } =
     useStructuredAgentSessionTransport({
       sessionId,
       target,
@@ -54,11 +74,14 @@ export function useStructuredAgentSession(args: {
     sessionId,
     target,
     transportEnabled,
+    isVisible,
     providerVisible,
+    providerStarting,
     fence: state.fence,
     turnId: transportState.turnId,
     unloadedTurnRevisions: state.unloadedTurnRevisions,
-    mutate
+    mutate,
+    ...(launch ? { launch } : {})
   })
   const outboxController = useStructuredAgentSessionOutbox({
     sessionId,
@@ -104,7 +127,7 @@ export function useStructuredAgentSession(args: {
           outbox.length
         ),
         send: (command) =>
-          mutate<AgentSessionConversationCommandResult>(
+          write<AgentSessionConversationCommandResult>(
             'agentSession.conversationCommand',
             'agentSession.conversationCommand',
             { command }
@@ -113,15 +136,19 @@ export function useStructuredAgentSession(args: {
     journalItems: transportState.journalItems,
     messages,
     status: transportEnabled ? state.status : 'ready',
-    error: transportEnabled
-      ? (state.error ?? writeError ?? outboxController.error)
-      : outboxController.error,
+    /** The outbox's own line; a failed read is worded from `readRefusal`, never its text. */
+    error: outboxController.error,
+    /** The refusal the failed read met, while `status` is `error`. */
+    readRefusal: transportEnabled ? state.readRefusal : undefined,
     hasOlder: transportEnabled && state.hasOlder,
     railOutline: transportEnabled ? railOutline : null,
     loadingOlder: transportEnabled && loadingOlder,
+    olderHistoryGeneration,
     loadOlder,
     prompts,
     outbox,
+    /** The journal's rows for sent messages, which carry a rejected message's whole fact. */
+    submissions: transportState.submissions,
     blockedClientMessageId: outboxController.blockedClientMessageId,
     send: (...input: Parameters<typeof outboxController.send>) =>
       !commandPending.current && outboxController.send(...input),
@@ -148,14 +175,32 @@ export function useStructuredAgentSession(args: {
         scope: 'background-tasks',
         ...(taskId ? { taskId } : {})
       }),
-    respond: (item: StructuredPromptItem, optionId: string) =>
-      mutate<AgentSessionPromptResult>(
+    respond: async (item: StructuredPromptItem, response: AgentSessionPromptResponse) => {
+      const promptTarget = { itemId: item.itemId, expectedRevision: item.revision }
+      let fields: Record<string, unknown>
+      if (response.kind === 'option') {
+        fields = { ...promptTarget, optionId: response.optionId }
+      } else if (await supportsStructuredAgentSessionQuestionAnswers(target)) {
+        // Negotiated before mutate fingerprints the call: older hosts reject the strict field.
+        fields = { ...promptTarget, answers: response.answers }
+      } else {
+        const optionId =
+          item.body.kind === 'question'
+            ? legacyAgentSessionSelectedOptionId(item.body, response.answers)
+            : null
+        if (optionId === null) {
+          return null
+        }
+        fields = { ...promptTarget, optionId }
+      }
+      return mutate<AgentSessionPromptResult>(
         item.body.kind === 'approval'
           ? 'agentSession.respondToApproval'
           : 'agentSession.respondToQuestion',
         `agentSession.respondTo:${item.body.kind}`,
-        { itemId: item.itemId, expectedRevision: item.revision, optionId }
-      ),
+        fields
+      )
+    },
     optionSnapshot,
     optionSurface,
     sessionCommands: transportEnabled ? (state.commands ?? undefined) : undefined,

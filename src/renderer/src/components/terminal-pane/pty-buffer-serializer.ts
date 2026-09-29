@@ -32,6 +32,7 @@ export type SerializeFn = (
 type SerializerEntry = {
   fn: SerializeFn
   clear?: () => void
+  resetInputModes?: () => void
   owner: symbol
 }
 
@@ -48,10 +49,10 @@ let listenerAttached = false
 export function registerPtySerializer(
   ptyId: string,
   serialize: SerializeFn,
-  clear?: () => void
+  actions: Pick<SerializerEntry, 'clear' | 'resetInputModes'> = {}
 ): () => void {
   const owner = Symbol(ptyId)
-  serializersByPtyId.set(ptyId, { fn: serialize, clear, owner })
+  serializersByPtyId.set(ptyId, { fn: serialize, ...actions, owner })
   ensureSerializerListener()
   return () => {
     const current = serializersByPtyId.get(ptyId)
@@ -114,6 +115,11 @@ export function registerPtyTitleSource(
   }
 }
 
+/** Grounds the pane's own records only; the host grounds its models on its own request. */
+export function resetPtyRendererInputModes(ptyId: string): void {
+  serializersByPtyId.get(ptyId)?.resetInputModes?.()
+}
+
 export function hasPtySerializer(ptyId: string): boolean {
   return serializersByPtyId.has(ptyId)
 }
@@ -130,6 +136,8 @@ function ensureSerializerListener(): void {
     // scrollback that the user explicitly removed.
     serializersByPtyId.get(request.ptyId)?.clear?.()
   })
+
+  window.api.pty.onResetInputModesRequest((request) => resetPtyRendererInputModes(request.ptyId))
 
   window.api.pty.onSerializeBufferRequest((request) => {
     const entry = serializersByPtyId.get(request.ptyId)
