@@ -13,6 +13,22 @@
   pointer-events: auto;
 }
 
+.terminal-agent-prompt-shortcuts__drag-handle {
+  display: grid;
+  width: 20px;
+  min-width: 20px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.terminal-agent-prompt-shortcuts__drag-handle:active {
+  cursor: grabbing;
+}
+
 .terminal-agent-prompt-shortcuts button {
   max-width: 12rem;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);

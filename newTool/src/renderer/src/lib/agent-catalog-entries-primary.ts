@@ -1,5 +1,6 @@
 import { getCatalogPlatform } from './agent-catalog-platform'
 import openClaudeLogoUrl from '../../../../resources/openclaude-logo.png?url'
+import codeartsLogoUrl from '../../../../resources/app-icons/codearts.svg?url'
 import { getTuiAgentLaunchCommand, TUI_AGENT_CONFIG } from '../../../shared/tui-agent-config'
 import { translate } from '@/i18n/i18n'
 import type { AgentCatalogEntry } from './agent-catalog'
@@ -42,6 +43,13 @@ export function primaryAgentCatalogEntries(): AgentCatalogEntry[] {
       cmd: 'codebuddy',
       faviconDomain: 'codebuddy.ai',
       homepageUrl: 'https://www.codebuddy.cn/docs/ide/Introduction'
+    },
+    {
+      id: 'codearts',
+      label: translate('auto.lib.agent.catalog.codearts', 'CodeArts'),
+      cmd: 'codearts',
+      iconUrl: codeartsLogoUrl,
+      homepageUrl: 'https://support.huaweicloud.com/'
     },
     {
       id: 'grok',

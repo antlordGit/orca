@@ -1,5 +1,11 @@
 import type React from 'react'
-import { ClaudeIcon, CodeBuddyIcon, DroidIcon, OpenAIIcon } from '@/components/status-bar/icons'
+import {
+  ClaudeIcon,
+  CodeArtsIcon,
+  CodeBuddyIcon,
+  DroidIcon,
+  OpenAIIcon
+} from '@/components/status-bar/icons'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import type { TerminalAgent } from '../../../shared/terminal-agent'
 import { formatAgentTypeLabel } from '../../../shared/agent-type-label'
@@ -64,6 +70,9 @@ export function AgentIcon({
   }
   if (agent === 'codebuddy') {
     return <CodeBuddyIcon size={size} />
+  }
+  if (agent === 'codearts') {
+    return <CodeArtsIcon size={size} />
   }
   if (agent === 'pi') {
     return <PiIcon size={size} />

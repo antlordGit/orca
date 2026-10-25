@@ -780,6 +780,10 @@ describe('formatAgentTypeLabel', () => {
     expect(formatAgentTypeLabel('codebuddy')).toBe('CodeBuddy')
   })
 
+  it("maps 'codearts' to 'CodeArts'", () => {
+    expect(formatAgentTypeLabel('codearts')).toBe('CodeArts')
+  })
+
   it('passes through arbitrary custom agent names as-is', () => {
     expect(formatAgentTypeLabel('weirdo')).toBe('weirdo')
   })
