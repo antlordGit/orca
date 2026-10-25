@@ -102,6 +102,7 @@ const ICONABLE_AGENT_TYPES: Record<TerminalAgent, true> = {
   claude: true,
   'claude-agent-teams': true,
   codebuddy: true,
+  codearts: true,
   openclaude: true,
   codex: true,
   autohand: true,

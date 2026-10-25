@@ -1,4 +1,5 @@
 import React from 'react'
+import codeartsLogoUrl from '../../../../../resources/app-icons/codearts.svg?url'
 import minimaxIconUrl from '../../../../../resources/minimax-icon.svg?url'
 
 export function OpenAIIcon({ size = 14 }: { size?: number }): React.JSX.Element {
@@ -351,6 +352,10 @@ export function CodeBuddyIcon({ size = 14 }: { size?: number }): React.JSX.Eleme
       />
     </svg>
   )
+}
+
+export function CodeArtsIcon({ size = 14 }: { size?: number }): React.JSX.Element {
+  return <img src={codeartsLogoUrl} width={size} height={size} alt="" aria-hidden />
 }
 
 export function DroidIcon({ size = 14 }: { size?: number }): React.JSX.Element {

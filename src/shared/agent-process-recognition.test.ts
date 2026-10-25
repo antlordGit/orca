@@ -646,4 +646,13 @@ describe('agent process recognition', () => {
     expect(isExpectedAgentProcess('/usr/local/bin/codebuddy', 'codebuddy')).toBe(true)
     expect(isRecognizedAgentType('codebuddy')).toBe(true)
   })
+
+  it('recognizes CodeArts CLI foreground processes', () => {
+    const codearts = { agent: 'codearts', processName: 'codearts' }
+    expect(recognizeAgentProcess('codearts')).toEqual(codearts)
+    expect(recognizeAgentProcess('/usr/local/bin/codearts')).toEqual(codearts)
+    expect(recognizeAgentProcess(String.raw`C:\Users\dev\AppData\Roaming\npm\codearts.cmd`)).toEqual(codearts)
+    expect(isExpectedAgentProcess('/usr/local/bin/codearts', 'codearts')).toBe(true)
+    expect(isRecognizedAgentType('codearts')).toBe(true)
+  })
 })

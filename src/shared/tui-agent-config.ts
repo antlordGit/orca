@@ -56,6 +56,10 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     detectCmdAliases: ['cbc'],
     promptInjectionMode: 'argv'
   },
+  codearts: {
+    detectCmd: 'codearts',
+    promptInjectionMode: 'argv'
+  },
   openclaude: {
     detectCmd: 'openclaude',
     promptInjectionMode: 'argv',

@@ -5,6 +5,7 @@ import type { AgentType } from './agent-status-types'
 const WELL_KNOWN_LABELS: Record<string, string> = {
   claude: 'Claude',
   codebuddy: 'CodeBuddy',
+  codearts: 'CodeArts',
   openclaude: 'OpenClaude',
   codex: 'Codex',
   qoder: 'Qoder CLI',

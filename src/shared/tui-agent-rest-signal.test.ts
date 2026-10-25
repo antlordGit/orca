@@ -35,6 +35,7 @@ const EXPECTED_REST_SIGNALS: Record<TuiAgent, TuiAgentRestSignal> = {
   qoder: 'ready-body',
   'qoder-cn': 'ready-body',
   codebuddy: 'none',
+  codearts: 'none',
   autohand: 'none',
   ante: 'none',
   trae: 'none',
