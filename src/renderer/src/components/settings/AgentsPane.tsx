@@ -11,6 +11,10 @@ import {
 } from './agent-generated-tab-title-copy'
 import { getAgentStatusHooksDescription, getAgentStatusHooksTitle } from './agent-status-hooks-copy'
 import {
+  getAgentTabRenameSlashCommandDescription,
+  getAgentTabRenameSlashCommandTitle
+} from './agent-tab-rename-slash-command-copy'
+import {
   getAgentWorkspaceTrustDescription,
   getAgentWorkspaceTrustTitle
 } from './agent-workspace-trust-copy'
@@ -91,6 +95,7 @@ export function AgentsPane({
           </>
         ) : null}
         <AgentGeneratedTabTitlesSetting settings={settings} updateSettings={updateSettings} />
+        <AgentTabRenameSlashCommandSetting settings={settings} updateSettings={updateSettings} />
         {!isPairedWebClientWindow() ? (
           <AgentAwakeSetting settings={settings} updateSettings={updateSettings} />
         ) : null}
@@ -129,6 +134,21 @@ export function AgentWorkspaceTrustSetting({ settings, updateSettings }: AgentSe
         checked={enabled}
         onChange={() => updateSettings({ agentWorkspaceTrustEnabled: !enabled })}
         ariaLabel={getAgentWorkspaceTrustTitle()}
+      />
+    </section>
+  )
+}
+
+export function AgentTabRenameSlashCommandSetting({ settings, updateSettings }: AgentSettingProps) {
+  const enabled = settings.agentTabRenameSendsSlashCommand === true
+  return (
+    <section className="space-y-3">
+      <SettingsSwitchRow
+        label={getAgentTabRenameSlashCommandTitle()}
+        description={getAgentTabRenameSlashCommandDescription()}
+        checked={enabled}
+        onChange={() => updateSettings({ agentTabRenameSendsSlashCommand: !enabled })}
+        ariaLabel={getAgentTabRenameSlashCommandTitle()}
       />
     </section>
   )

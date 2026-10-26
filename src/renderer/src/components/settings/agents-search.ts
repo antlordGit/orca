@@ -15,6 +15,11 @@ import {
   getAgentStatusHooksTitle
 } from './agent-status-hooks-copy'
 import {
+  getAgentTabRenameSlashCommandDescription,
+  getAgentTabRenameSlashCommandSearchKeywords,
+  getAgentTabRenameSlashCommandTitle
+} from './agent-tab-rename-slash-command-copy'
+import {
   getAgentWorkspaceTrustDescription,
   getAgentWorkspaceTrustSearchKeywords,
   getAgentWorkspaceTrustTitle
@@ -142,6 +147,11 @@ const getAllAgentsPaneSearchEntries = createLocalizedCatalog(() => [
     title: getAgentGeneratedTabTitlesTitle(),
     description: getAgentGeneratedTabTitlesDescription(),
     keywords: getAgentGeneratedTabTitlesSearchKeywords()
+  },
+  {
+    title: getAgentTabRenameSlashCommandTitle(),
+    description: getAgentTabRenameSlashCommandDescription(),
+    keywords: getAgentTabRenameSlashCommandSearchKeywords()
   },
   {
     title: getAgentAwakeTitle(),
